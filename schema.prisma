@@ -1,0 +1,80 @@
+// Prisma schema — swim-marathon MVP
+// Geo "nearby" search uses raw SQL (PostGIS); see places.service.ts.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+enum Role {
+  ADMIN
+  OWNER
+  SWIMMER
+}
+
+enum RegistrationStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  name          String?
+  role          Role           @default(SWIMMER)
+  ownedPools    Pool[]         @relation("PoolOwner")
+  registrations Registration[]
+  sessions      SwimSession[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Pool {
+  id            String         @id @default(uuid())
+  name          String
+  address       String?
+  // Stored as plain columns; PostGIS distance is computed from these in raw SQL.
+  latitude      Float?
+  longitude     Float?
+  ownerId       String
+  owner         User           @relation("PoolOwner", fields: [ownerId], references: [id])
+  registrations Registration[]
+  sessions      SwimSession[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+// Links a swimmer to a pool (the "registered in his place" relationship).
+model Registration {
+  id        String             @id @default(uuid())
+  swimmerId String
+  poolId    String
+  status    RegistrationStatus @default(ACTIVE)
+  swimmer   User               @relation(fields: [swimmerId], references: [id])
+  pool      Pool               @relation(fields: [poolId], references: [id])
+  joinedAt  DateTime           @default(now())
+
+  @@unique([swimmerId, poolId])
+}
+
+model SwimSession {
+  id              String   @id @default(uuid())
+  swimmerId       String
+  poolId          String?
+  distanceMeters  Int
+  durationSeconds Int?
+  swamAt          DateTime
+  swimmer         User     @relation(fields: [swimmerId], references: [id])
+  pool            Pool?    @relation(fields: [poolId], references: [id])
+  createdAt       DateTime @default(now())
+
+  // Hot path for the heatmap: per-swimmer, ordered by date.
+  @@index([swimmerId, swamAt])
+}
