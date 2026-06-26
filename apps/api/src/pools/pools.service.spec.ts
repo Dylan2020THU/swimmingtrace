@@ -132,3 +132,18 @@ describe('PoolsService.setMembershipStatus', () => {
     });
   });
 });
+
+describe('PoolsService.recordSessionForSwimmer', () => {
+  it('校验泳池与游泳者归属后创建 session', async () => {
+    const prisma: any = {
+      pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
+      registration: { findFirst: jest.fn().mockResolvedValue({ id: 'r1' }) },
+      swimSession: { create: jest.fn().mockResolvedValue({ id: 'ss1' }) },
+    };
+    const svc = new PoolsService(prisma);
+    await svc.recordSessionForSwimmer('o1', 'p1', 's1', { distanceMeters: 1000, swamAt: '2026-02-01T08:00:00.000Z' });
+    expect(prisma.swimSession.create).toHaveBeenCalledWith({
+      data: { swimmerId: 's1', poolId: 'p1', distanceMeters: 1000, durationSeconds: undefined, swamAt: new Date('2026-02-01T08:00:00.000Z') },
+    });
+  });
+});

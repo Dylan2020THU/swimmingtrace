@@ -1,8 +1,8 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { IsEmail, IsEnum, IsLatitude, IsLongitude, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsDateString, IsEmail, IsEnum, IsInt, IsLatitude, IsLongitude, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { PrismaService } from '../prisma.service';
-import { PoolDetail, PoolSummary, SwimmerListItem } from '@swim/shared';
-import { assertOwnsPool } from '../common/ownership';
+import { CreateSessionDto, PoolDetail, PoolSummary, SwimmerListItem } from '@swim/shared';
+import { assertOwnsPool, assertOwnsSwimmer } from '../common/ownership';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 
@@ -31,6 +31,12 @@ export class CreateSwimmerDto {
 
 export class UpdateMembershipDto {
   @IsEnum({ ACTIVE: 'ACTIVE', INACTIVE: 'INACTIVE' }) status: 'ACTIVE' | 'INACTIVE';
+}
+
+export class RecordSessionDto implements CreateSessionDto {
+  @IsInt() @Min(1) distanceMeters: number;
+  @IsOptional() @IsInt() @Min(1) durationSeconds?: number;
+  @IsDateString() swamAt: string;
 }
 
 @Injectable()
@@ -152,6 +158,20 @@ export class PoolsService {
     return this.prisma.registration.update({
       where: { swimmerId_poolId: { swimmerId, poolId } },
       data: { status: dto.status },
+    });
+  }
+
+  async recordSessionForSwimmer(ownerId: string, poolId: string, swimmerId: string, dto: CreateSessionDto) {
+    await assertOwnsPool(this.prisma, ownerId, poolId);
+    await assertOwnsSwimmer(this.prisma, ownerId, swimmerId);
+    return this.prisma.swimSession.create({
+      data: {
+        swimmerId,
+        poolId,
+        distanceMeters: dto.distanceMeters,
+        durationSeconds: dto.durationSeconds,
+        swamAt: new Date(dto.swamAt),
+      },
     });
   }
 }

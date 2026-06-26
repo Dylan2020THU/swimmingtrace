@@ -4,6 +4,7 @@ import {
   CreatePoolDto,
   CreateSwimmerDto,
   PoolsService,
+  RecordSessionDto,
   RegisterSwimmerDto,
   UpdateMembershipDto,
   UpdatePoolDto,
@@ -78,5 +79,11 @@ export class PoolsController {
   @Roles(Role.OWNER)
   setMembership(@CurrentUser() user: AuthedUser, @Param('id') id: string, @Param('sid') sid: string, @Body() dto: UpdateMembershipDto) {
     return this.pools.setMembershipStatus(user.id, id, sid, dto);
+  }
+
+  @Post(':id/swimmers/:sid/sessions')
+  @Roles(Role.OWNER)
+  record(@CurrentUser() user: AuthedUser, @Param('id') id: string, @Param('sid') sid: string, @Body() dto: RecordSessionDto) {
+    return this.pools.recordSessionForSwimmer(user.id, id, sid, dto);
   }
 }
