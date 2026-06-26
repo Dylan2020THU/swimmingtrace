@@ -28,7 +28,7 @@ describe('Owner flows (e2e)', () => {
   it('owner A 不能访问 owner B 的泳池 → 403', async () => {
     const a = (await reg('a@x.com')).body.accessToken;
     const b = (await reg('b@x.com')).body.accessToken;
-    const poolB = await request(app.getHttpServer()).post('/pools').set('Authorization', `Bearer ${b}`).send({ name: 'B-Pool' });
+    const poolB = await request(app.getHttpServer()).post('/pools').set('Authorization', `Bearer ${b}`).send({ name: 'B-Pool' }).expect(201);
     await request(app.getHttpServer())
       .get(`/pools/${poolB.body.id}`).set('Authorization', `Bearer ${a}`)
       .expect(403);
@@ -36,7 +36,7 @@ describe('Owner flows (e2e)', () => {
 
   it('建会员 + 代录 happy path', async () => {
     const a = (await reg('owner@x.com')).body.accessToken;
-    const pool = await request(app.getHttpServer()).post('/pools').set('Authorization', `Bearer ${a}`).send({ name: 'A-Pool' });
+    const pool = await request(app.getHttpServer()).post('/pools').set('Authorization', `Bearer ${a}`).send({ name: 'A-Pool' }).expect(201);
     const swimmer = await request(app.getHttpServer())
       .post(`/pools/${pool.body.id}/swimmers`).set('Authorization', `Bearer ${a}`)
       .send({ name: 'Sam', email: 'sam@x.com' }).expect(201);

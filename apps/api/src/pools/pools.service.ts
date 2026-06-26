@@ -51,7 +51,7 @@ export class PoolsService {
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     return Promise.all(
       pools.map(async (p) => {
-        const memberCount = await this.prisma.registration.count({ where: { poolId: p.id, status: 'ACTIVE' } });
+        const memberCount = await this.prisma.registration.count({ where: { poolId: p.id } });
         const agg = await this.prisma.swimSession.aggregate({
           where: { poolId: p.id, swamAt: { gte: since } },
           _sum: { distanceMeters: true },
@@ -90,7 +90,7 @@ export class PoolsService {
 
   async getPool(ownerId: string, poolId: string): Promise<PoolDetail> {
     const pool = await assertOwnsPool(this.prisma, ownerId, poolId);
-    const memberCount = await this.prisma.registration.count({ where: { poolId, status: 'ACTIVE' } });
+    const memberCount = await this.prisma.registration.count({ where: { poolId } });
     return {
       id: pool.id, name: pool.name, address: pool.address,
       latitude: pool.latitude, longitude: pool.longitude,
@@ -140,6 +140,8 @@ export class PoolsService {
       user = await this.prisma.user.create({
         data: { email: dto.email, name: dto.name, passwordHash, role: 'SWIMMER' },
       });
+    } else if (dto.name && !user.name) {
+      user = await this.prisma.user.update({ where: { id: user.id }, data: { name: dto.name } });
     }
     const reg = await this.prisma.registration.upsert({
       where: { swimmerId_poolId: { swimmerId: user.id, poolId } },

@@ -19,6 +19,7 @@ describe('PoolsService.listMyPools', () => {
     const svc = new PoolsService(prisma);
     const res = await svc.listMyPools('o1');
     expect(prisma.pool.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { ownerId: 'o1', archivedAt: null } }));
+    expect(prisma.registration.count).toHaveBeenCalledWith({ where: { poolId: 'p1' } });
     expect(res[0]).toMatchObject({ id: 'p1', memberCount: 3, mileageLast30dMeters: 1200 });
   });
 
@@ -43,6 +44,7 @@ describe('PoolsService.getPool', () => {
     });
     const svc = new PoolsService(prisma);
     await expect(svc.getPool('o1', 'p1')).resolves.toMatchObject({ id: 'p1', memberCount: 2 });
+    expect(prisma.registration.count).toHaveBeenCalledWith({ where: { poolId: 'p1' } });
   });
 });
 
@@ -99,6 +101,16 @@ describe('PoolsService.createSwimmer', () => {
     const res = await svc.createSwimmer('o1', 'p1', { email: 'a@b.c' });
     expect(prisma.user.create).not.toHaveBeenCalled();
     expect(res.swimmerId).toBe('s9');
+  });
+
+  it('复用用户且原 name 为 null → 自动补全 name', async () => {
+    const prisma: any = base();
+    prisma.user.findUnique.mockResolvedValue({ id: 's9', name: null, email: 'a@b.c', claimedAt: null });
+    prisma.user.update = jest.fn().mockResolvedValue({ id: 's9', name: 'New', email: 'a@b.c', claimedAt: null });
+    const svc = new PoolsService(prisma);
+    await svc.createSwimmer('o1', 'p1', { name: 'New', email: 'a@b.c' });
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 's9' }, data: { name: 'New' } });
   });
 });
 
