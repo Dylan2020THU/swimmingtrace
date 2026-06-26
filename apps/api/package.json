@@ -12,7 +12,8 @@
     "seed": "prisma db seed",
     "postinstall": "prisma generate",
     "test": "jest",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\""
   },
   "prisma": { "schema": "prisma/schema.prisma", "seed": "tsx prisma/seed.ts" },
   "dependencies": {

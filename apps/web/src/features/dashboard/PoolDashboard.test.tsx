@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { it, expect, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 
 vi.mock('@uiw/react-heat-map', () => ({ default: () => null }));
