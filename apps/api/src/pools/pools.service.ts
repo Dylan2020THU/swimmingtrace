@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { IsLatitude, IsLongitude, IsOptional, IsString, IsUUID } from 'class-validator';
 import { PrismaService } from '../prisma.service';
+import { PoolSummary } from '@swim/shared';
 
 export class CreatePoolDto {
   @IsString() name: string;
@@ -16,6 +17,30 @@ export class RegisterSwimmerDto {
 @Injectable()
 export class PoolsService {
   constructor(private prisma: PrismaService) {}
+
+  async listMyPools(ownerId: string, includeArchived = false): Promise<PoolSummary[]> {
+    const pools = await this.prisma.pool.findMany({
+      where: { ownerId, ...(includeArchived ? {} : { archivedAt: null }) },
+      orderBy: { createdAt: 'desc' },
+    });
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    return Promise.all(
+      pools.map(async (p) => {
+        const memberCount = await this.prisma.registration.count({ where: { poolId: p.id, status: 'ACTIVE' } });
+        const agg = await this.prisma.swimSession.aggregate({
+          where: { poolId: p.id, swamAt: { gte: since } },
+          _sum: { distanceMeters: true },
+        });
+        return {
+          id: p.id, name: p.name, address: p.address,
+          latitude: p.latitude, longitude: p.longitude,
+          memberCount, mileageLast30dMeters: agg._sum.distanceMeters ?? 0,
+          archivedAt: p.archivedAt ? p.archivedAt.toISOString() : null,
+          createdAt: p.createdAt.toISOString(),
+        };
+      }),
+    );
+  }
 
   createPool(ownerId: string, dto: CreatePoolDto) {
     return this.prisma.pool.create({ data: { ...dto, ownerId } });

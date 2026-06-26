@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import {
   CreatePoolDto,
@@ -18,6 +18,12 @@ type AuthedUser = { id: string; role: Role };
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PoolsController {
   constructor(private pools: PoolsService) {}
+
+  @Get()
+  @Roles(Role.OWNER)
+  list(@CurrentUser() user: AuthedUser, @Query('includeArchived') includeArchived?: string) {
+    return this.pools.listMyPools(user.id, includeArchived === 'true');
+  }
 
   @Post()
   @Roles(Role.OWNER)
