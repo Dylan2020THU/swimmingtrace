@@ -1,13 +1,15 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { StatsService } from './stats.service';
-import { CurrentUser, JwtAuthGuard } from '../common/auth.common';
+import { CurrentUser, JwtAuthGuard, Roles, RolesGuard } from '../common/auth.common';
+import { Role } from '@prisma/client';
 
 @Controller('stats')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class StatsController {
   constructor(private stats: StatsService) {}
 
   @Get('heatmap')
+  @Roles(Role.SWIMMER)
   heatmap(
     @CurrentUser() user: { id: string },
     @Query('year') year?: string,
@@ -17,7 +19,14 @@ export class StatsController {
   }
 
   @Get('summary')
+  @Roles(Role.SWIMMER)
   summary(@CurrentUser() user: { id: string }) {
     return this.stats.summary(user.id);
+  }
+
+  @Get('overview')
+  @Roles(Role.OWNER)
+  overview(@CurrentUser() user: { id: string }) {
+    return this.stats.overview(user.id);
   }
 }

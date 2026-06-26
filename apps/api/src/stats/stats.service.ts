@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { OverviewStats } from '@swim/shared';
 
 export interface HeatmapCell {
   date: string; // YYYY-MM-DD
@@ -38,6 +39,26 @@ export class StatsService {
       date: r.day.toISOString().slice(0, 10),
       distanceMeters: Number(r.total),
     }));
+  }
+
+  async overview(ownerId: string): Promise<OverviewStats> {
+    const pools = await this.prisma.pool.findMany({ where: { ownerId, archivedAt: null }, select: { id: true } });
+    const poolIds = pools.map((p) => p.id);
+    if (poolIds.length === 0) {
+      return { poolCount: 0, memberCount: 0, activeMemberCount: 0, mileageThisMonthMeters: 0, sessionsThisMonth: 0 };
+    }
+    const memberCount = await this.prisma.registration.count({ where: { poolId: { in: poolIds } } });
+    const activeMemberCount = await this.prisma.registration.count({ where: { poolId: { in: poolIds }, status: 'ACTIVE' } });
+    const now = new Date();
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const agg = await this.prisma.swimSession.aggregate({
+      where: { poolId: { in: poolIds }, swamAt: { gte: monthStart } },
+      _sum: { distanceMeters: true }, _count: true,
+    });
+    return {
+      poolCount: poolIds.length, memberCount, activeMemberCount,
+      mileageThisMonthMeters: agg._sum.distanceMeters ?? 0, sessionsThisMonth: agg._count,
+    };
   }
 
   /** Totals for the swimmer's profile header. */
