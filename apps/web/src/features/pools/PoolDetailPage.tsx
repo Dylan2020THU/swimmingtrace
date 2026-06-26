@@ -34,7 +34,7 @@ export function PoolDetailPage() {
         title={p.name}
         extra={
           <Space>
-            <Button autoInsertSpace={false} onClick={() => { form.setFieldsValue(p); setEditOpen(true); }}>编辑</Button>
+            <Button autoInsertSpace={false} onClick={() => { form.setFieldsValue({ name: p.name, address: p.address, latitude: p.latitude, longitude: p.longitude }); setEditOpen(true); }}>编辑</Button>
             <Popconfirm title="归档该泳池？" description="归档后将从列表隐藏（历史数据保留）。" onConfirm={archive} okText="确定" cancelText="取消">
               <Button danger autoInsertSpace={false}>归档</Button>
             </Popconfirm>

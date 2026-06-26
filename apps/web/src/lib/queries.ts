@@ -32,7 +32,7 @@ export function useUpdatePool(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (b: UpdatePoolDto) => ep.updatePool(id, b),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: queryKeys.pool(id) }); qc.invalidateQueries({ queryKey: queryKeys.pools }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: queryKeys.pool(id) }); qc.invalidateQueries({ queryKey: queryKeys.pools }); qc.invalidateQueries({ queryKey: queryKeys.poolStats(id) }); },
   });
 }
 export function useArchivePool() {

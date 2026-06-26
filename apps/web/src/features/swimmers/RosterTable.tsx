@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Card, Space, Table, Tag, App } from 'antd';
+import { Button, Card, Table, Tag, App } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import type { SwimmerListItem } from '@swim/shared';
 import { useSwimmers, useSetMembership } from '../../lib/queries';
