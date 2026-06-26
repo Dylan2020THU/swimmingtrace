@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import { StatsService } from './stats.service';
 
 describe('StatsService.overview', () => {
@@ -18,5 +19,29 @@ describe('StatsService.overview', () => {
     await expect(svc.overview('o1')).resolves.toEqual({
       poolCount: 2, memberCount: 5, activeMemberCount: 4, mileageThisMonthMeters: 8000, sessionsThisMonth: 12,
     });
+  });
+});
+
+describe('StatsService.poolStats', () => {
+  it('非本人 → 403', async () => {
+    const prisma: any = { pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'other', archivedAt: null }) } };
+    const svc = new StatsService(prisma);
+    await expect(svc.poolStats('o1', 'p1')).rejects.toBeInstanceOf(ForbiddenException);
+  });
+  it('本人 → 返回 memberCount/里程/trend/heatmap', async () => {
+    const prisma: any = {
+      pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
+      registration: { count: jest.fn().mockResolvedValueOnce(3).mockResolvedValueOnce(2) },
+      swimSession: { aggregate: jest.fn().mockResolvedValue({ _sum: { distanceMeters: 500 } }) },
+      $queryRaw: jest.fn().mockResolvedValue([{ day: new Date('2026-02-01T00:00:00Z'), total: BigInt(500) }]),
+    };
+    const svc = new StatsService(prisma);
+    const res = await svc.poolStats('o1', 'p1');
+    expect(prisma.registration.count).toHaveBeenNthCalledWith(1, { where: { poolId: 'p1' } });
+    expect(prisma.registration.count).toHaveBeenNthCalledWith(2, { where: { poolId: 'p1', status: 'ACTIVE' } });
+    expect(res.memberCount).toBe(3);
+    expect(res.activeMemberCount).toBe(2);
+    expect(res.heatmap).toEqual([{ date: '2026-02-01', distanceMeters: 500 }]);
+    expect(res.trend).toEqual(res.heatmap);
   });
 });

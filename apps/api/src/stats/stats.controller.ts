@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { StatsService } from './stats.service';
 import { CurrentUser, JwtAuthGuard, Roles, RolesGuard } from '../common/auth.common';
 import { Role } from '@prisma/client';
@@ -28,5 +28,11 @@ export class StatsController {
   @Roles(Role.OWNER)
   overview(@CurrentUser() user: { id: string }) {
     return this.stats.overview(user.id);
+  }
+
+  @Get('pool/:id')
+  @Roles(Role.OWNER)
+  poolStats(@CurrentUser() user: { id: string }, @Param('id') id: string) {
+    return this.stats.poolStats(user.id, id);
   }
 }
