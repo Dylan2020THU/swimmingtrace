@@ -3,6 +3,7 @@ import { Button, Card, Descriptions, Form, Modal, Popconfirm, Skeleton, Space, A
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePool, useUpdatePool, useArchivePool } from '../../lib/queries';
 import { PoolForm } from './PoolForm';
+import { RosterTable } from '../swimmers/RosterTable';
 
 export function PoolDetailPage() {
   const { poolId = '' } = useParams();
@@ -46,7 +47,7 @@ export function PoolDetailPage() {
         </Descriptions>
       </Card>
 
-      {/* 会员名册：Task 10 填充 */}
+      <RosterTable poolId={poolId} />
       {/* 本泳池看板：Task 11 填充 */}
 
       <Modal title="编辑泳池" open={editOpen} onOk={() => form.submit()} onCancel={() => setEditOpen(false)} confirmLoading={updatePool.isPending} okText="保存">
