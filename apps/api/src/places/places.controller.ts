@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/auth.common';
 import { PlacesService } from './places.service';
 
@@ -14,10 +14,12 @@ export class PlacesController {
     @Query('lng') lng: string,
     @Query('radiusMeters') radiusMeters?: string,
   ) {
-    return this.places.nearby(
-      parseFloat(lat),
-      parseFloat(lng),
-      radiusMeters ? parseFloat(radiusMeters) : 5000,
-    );
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    if (Number.isNaN(latNum) || Number.isNaN(lngNum)) {
+      throw new BadRequestException('lat and lng are required and must be numbers');
+    }
+    const radius = radiusMeters !== undefined ? parseFloat(radiusMeters) : 5000;
+    return this.places.nearby(latNum, lngNum, Number.isNaN(radius) ? 5000 : radius);
   }
 }

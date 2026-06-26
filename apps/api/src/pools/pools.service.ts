@@ -1,8 +1,9 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { IsDateString, IsEmail, IsEnum, IsInt, IsLatitude, IsLongitude, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { PrismaService } from '../prisma.service';
 import { CreateSessionDto, PoolDetail, PoolSummary, SwimmerListItem } from '@swim/shared';
-import { assertOwnsPool, assertOwnsSwimmer } from '../common/ownership';
+import { assertOwnsPool } from '../common/ownership';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 
@@ -157,15 +158,26 @@ export class PoolsService {
 
   async setMembershipStatus(ownerId: string, poolId: string, swimmerId: string, dto: UpdateMembershipDto) {
     await assertOwnsPool(this.prisma, ownerId, poolId);
-    return this.prisma.registration.update({
-      where: { swimmerId_poolId: { swimmerId, poolId } },
-      data: { status: dto.status },
-    });
+    try {
+      return await this.prisma.registration.update({
+        where: { swimmerId_poolId: { swimmerId, poolId } },
+        data: { status: dto.status },
+      });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025') {
+        throw new NotFoundException('该游泳者未登记在本泳池');
+      }
+      throw e;
+    }
   }
 
   async recordSessionForSwimmer(ownerId: string, poolId: string, swimmerId: string, dto: CreateSessionDto) {
     await assertOwnsPool(this.prisma, ownerId, poolId);
-    await assertOwnsSwimmer(this.prisma, ownerId, swimmerId);
+    // 代录要求该游泳者确实登记在本池（而非 owner 名下任意池）。
+    const reg = await this.prisma.registration.findUnique({
+      where: { swimmerId_poolId: { swimmerId, poolId } },
+    });
+    if (!reg) throw new NotFoundException('该游泳者未登记在本泳池');
     return this.prisma.swimSession.create({
       data: {
         swimmerId,
