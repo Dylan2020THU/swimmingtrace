@@ -7,11 +7,14 @@
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
     "prisma:generate": "prisma generate",
+    "seed": "prisma db seed",
+    "postinstall": "prisma generate",
     "test": "jest",
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
-  "prisma": { "schema": "prisma/schema.prisma" },
+  "prisma": { "schema": "prisma/schema.prisma", "seed": "tsx prisma/seed.ts" },
   "dependencies": {
     "@nestjs/common": "^10.3.0",
     "@nestjs/config": "^3.2.0",
@@ -41,6 +44,7 @@
     "prisma": "^5.12.0",
     "supertest": "^6.3.4",
     "ts-jest": "^29.1.2",
+    "tsx": "^4.7.1",
     "typescript": "^5.4.0"
   },
   "jest": {
