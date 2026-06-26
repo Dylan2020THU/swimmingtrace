@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: swim
+          POSTGRES_PASSWORD: swim
+          POSTGRES_DB: swim
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U swim"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Used by e2e (globalSetup connects to `swim`, provisions `swim_test`).
+      DATABASE_URL: postgresql://swim:swim@localhost:5432/swim?schema=public
+      JWT_SECRET: ci-test-secret-0123456789abcdef
+      CORS_ORIGIN: http://localhost:5173
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # `npm ci` runs the apps/api postinstall (prisma generate) automatically.
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build (shared + api + web)
+        run: npm run build
+
+      - name: Unit tests (api + web)
+        run: npm test
+
+      - name: E2E tests (api, against Postgres service)
+        run: npm run test:e2e
