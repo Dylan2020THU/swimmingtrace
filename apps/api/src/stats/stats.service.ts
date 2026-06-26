@@ -16,16 +16,21 @@ export class StatsService {
    * in SQL keeps the payload to ~365 rows max. Empty days are simply absent.
    */
   private async dailyDistance(where: Prisma.Sql, year: number): Promise<HeatmapCell[]> {
-    const start = new Date(Date.UTC(year, 0, 1));
-    const end = new Date(Date.UTC(year + 1, 0, 1));
     const tz = process.env.APP_TIMEZONE ?? 'UTC';
+    // Convert the stored UTC instant to the operator's local wall-clock, then
+    // both bucket AND filter on that same local value so the calendar-year
+    // window lines up with the day buckets (no off-by-one at year edges when
+    // tz != UTC).
+    const localTs = Prisma.sql`("swamAt" AT TIME ZONE 'UTC' AT TIME ZONE ${tz})`;
+    const yearStart = `${year}-01-01`;
+    const yearEnd = `${year + 1}-01-01`;
     const rows = await this.prisma.$queryRaw<{ day: string; total: bigint }[]>(Prisma.sql`
-      SELECT to_char(date_trunc('day', "swamAt" AT TIME ZONE 'UTC' AT TIME ZONE ${tz}), 'YYYY-MM-DD') AS day,
+      SELECT to_char(date_trunc('day', ${localTs}), 'YYYY-MM-DD') AS day,
              SUM("distanceMeters") AS total
       FROM "SwimSession"
       WHERE ${where}
-        AND "swamAt" >= ${start}
-        AND "swamAt" <  ${end}
+        AND ${localTs} >= ${yearStart}::timestamp
+        AND ${localTs} <  ${yearEnd}::timestamp
       GROUP BY day
       ORDER BY day ASC
     `);

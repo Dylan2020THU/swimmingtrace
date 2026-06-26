@@ -98,7 +98,7 @@ async function main() {
     const { id, poolId } = swimmers[i];
     const rand = rng(1000 + i * 7);
     for (let d = 0; d < 120; d++) {
-      // ~45% of days have a swim, weighted so recent days are denser.
+      // Denser on recent days: P(swim) = 1 - density ≈ 0.4–0.7, higher for recent dates.
       const density = 0.3 + 0.3 * (1 - d / 120);
       if (rand() > density) continue;
       const swamAt = new Date(today.getTime() - d * DAY_MS);

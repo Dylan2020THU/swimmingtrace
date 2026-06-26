@@ -43,10 +43,10 @@ swimmingtrace/
 ## 快速开始
 
 ```bash
-# 1) 准备后端环境变量
+# 1) 准备后端环境变量（默认值开箱即可本地运行）
 cp apps/api/.env.example apps/api/.env
-#   编辑 apps/api/.env，把 JWT_SECRET 改成强随机串（否则后端拒绝启动）
-#   生成一个：node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+#   生产环境务必把 JWT_SECRET 换成强随机串（否则不应上线）：
+#   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 # 2) 一键安装 + 起库 + 迁移 + 种子
 npm run setup
@@ -111,6 +111,7 @@ e2e 覆盖关键鉴权/所有权链路（owner 越权 → 403）与"建会员 + 
 
 为后续"游泳者自助端"预留、当前 OWNER 控制台**不经前端调用**的后端接口：
 
+- `POST /pools/:id/register`（游泳者自助加入泳池，`@Roles(OWNER, SWIMMER)`）
 - `POST /sessions`、`GET /sessions/me`（游泳者自录自取）
 - `GET /stats/heatmap`、`GET /stats/summary`（游泳者自视角，`@Roles(SWIMMER)`）
 - `GET /places/nearby`（PostGIS 附近泳池）
