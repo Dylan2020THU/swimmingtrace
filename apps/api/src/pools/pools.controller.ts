@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import {
   CreatePoolDto,
   PoolsService,
   RegisterSwimmerDto,
+  UpdatePoolDto,
 } from './pools.service';
 import {
   CurrentUser,
@@ -51,5 +52,17 @@ export class PoolsController {
   @Roles(Role.OWNER)
   swimmers(@Param('id') poolId: string, @CurrentUser() user: AuthedUser) {
     return this.pools.listSwimmers(poolId, user.id);
+  }
+
+  @Patch(':id')
+  @Roles(Role.OWNER)
+  update(@CurrentUser() user: AuthedUser, @Param('id') id: string, @Body() dto: UpdatePoolDto) {
+    return this.pools.updatePool(user.id, id, dto);
+  }
+
+  @Post(':id/archive')
+  @Roles(Role.OWNER)
+  archive(@CurrentUser() user: AuthedUser, @Param('id') id: string) {
+    return this.pools.archivePool(user.id, id);
   }
 }

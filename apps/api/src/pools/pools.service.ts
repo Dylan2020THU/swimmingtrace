@@ -11,6 +11,13 @@ export class CreatePoolDto {
   @IsOptional() @IsLongitude() longitude?: number;
 }
 
+export class UpdatePoolDto {
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsString() address?: string;
+  @IsOptional() @IsLatitude() latitude?: number;
+  @IsOptional() @IsLongitude() longitude?: number;
+}
+
 export class RegisterSwimmerDto {
   @IsUUID() swimmerId: string;
 }
@@ -73,6 +80,16 @@ export class PoolsService {
       archivedAt: pool.archivedAt ? pool.archivedAt.toISOString() : null,
       memberCount, createdAt: pool.createdAt.toISOString(),
     };
+  }
+
+  async updatePool(ownerId: string, poolId: string, dto: UpdatePoolDto) {
+    await assertOwnsPool(this.prisma, ownerId, poolId);
+    return this.prisma.pool.update({ where: { id: poolId }, data: { ...dto } });
+  }
+
+  async archivePool(ownerId: string, poolId: string) {
+    await assertOwnsPool(this.prisma, ownerId, poolId);
+    return this.prisma.pool.update({ where: { id: poolId }, data: { archivedAt: new Date() } });
   }
 
   async listSwimmers(poolId: string, ownerId: string) {

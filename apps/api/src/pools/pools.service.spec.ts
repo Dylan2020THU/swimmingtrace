@@ -45,3 +45,29 @@ describe('PoolsService.getPool', () => {
     await expect(svc.getPool('o1', 'p1')).resolves.toMatchObject({ id: 'p1', memberCount: 2 });
   });
 });
+
+describe('PoolsService.updatePool / archivePool', () => {
+  it('updatePool 校验所有权后更新', async () => {
+    const prisma = mkPrisma({
+      pool: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }),
+        update: jest.fn().mockResolvedValue({ id: 'p1', name: 'B' }),
+      },
+    });
+    const svc = new PoolsService(prisma);
+    await svc.updatePool('o1', 'p1', { name: 'B' });
+    expect(prisma.pool.update).toHaveBeenCalledWith({ where: { id: 'p1' }, data: { name: 'B' } });
+  });
+  it('archivePool 设置 archivedAt', async () => {
+    const prisma = mkPrisma({
+      pool: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }),
+        update: jest.fn().mockResolvedValue({ id: 'p1', archivedAt: new Date() }),
+      },
+    });
+    const svc = new PoolsService(prisma);
+    await svc.archivePool('o1', 'p1');
+    expect(prisma.pool.update).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'p1' } }));
+    expect(prisma.pool.update.mock.calls[0][0].data.archivedAt).toBeInstanceOf(Date);
+  });
+});
