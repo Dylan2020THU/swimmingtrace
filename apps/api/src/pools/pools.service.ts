@@ -99,15 +99,27 @@ export class PoolsService {
     return this.prisma.pool.update({ where: { id: poolId }, data: { archivedAt: new Date() } });
   }
 
-  async listSwimmers(poolId: string, ownerId: string) {
-    const pool = await this.prisma.pool.findUnique({ where: { id: poolId } });
-    if (!pool) throw new NotFoundException('Pool not found');
-    if (pool.ownerId !== ownerId) throw new ForbiddenException();
-
-    return this.prisma.registration.findMany({
-      where: { poolId, status: 'ACTIVE' },
-      include: { swimmer: { select: { id: true, name: true, email: true } } },
+  async listSwimmers(ownerId: string, poolId: string): Promise<SwimmerListItem[]> {
+    await assertOwnsPool(this.prisma, ownerId, poolId);
+    const regs = await this.prisma.registration.findMany({
+      where: { poolId },
+      include: { swimmer: { select: { id: true, name: true, email: true, claimedAt: true } } },
+      orderBy: { joinedAt: 'desc' },
     });
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    return Promise.all(
+      regs.map(async (r) => {
+        const agg = await this.prisma.swimSession.aggregate({
+          where: { swimmerId: r.swimmerId, poolId, swamAt: { gte: since } },
+          _sum: { distanceMeters: true },
+        });
+        return {
+          swimmerId: r.swimmer.id, name: r.swimmer.name, email: r.swimmer.email,
+          status: r.status, claimedAt: r.swimmer.claimedAt ? r.swimmer.claimedAt.toISOString() : null,
+          mileageLast30dMeters: agg._sum.distanceMeters ?? 0, joinedAt: r.joinedAt.toISOString(),
+        };
+      }),
+    );
   }
 
   async createSwimmer(ownerId: string, poolId: string, dto: CreateSwimmerDto): Promise<SwimmerListItem> {

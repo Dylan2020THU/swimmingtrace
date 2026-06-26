@@ -52,7 +52,7 @@ export class PoolsController {
   @Get(':id/swimmers')
   @Roles(Role.OWNER)
   swimmers(@Param('id') poolId: string, @CurrentUser() user: AuthedUser) {
-    return this.pools.listSwimmers(poolId, user.id);
+    return this.pools.listSwimmers(user.id, poolId);
   }
 
   @Patch(':id')

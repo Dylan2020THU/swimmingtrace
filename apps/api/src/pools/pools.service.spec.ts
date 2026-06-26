@@ -101,3 +101,19 @@ describe('PoolsService.createSwimmer', () => {
     expect(res.swimmerId).toBe('s9');
   });
 });
+
+describe('PoolsService.listSwimmers', () => {
+  it('返回 SwimmerListItem[] 含状态与近 30 天里程', async () => {
+    const prisma: any = {
+      pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
+      registration: { findMany: jest.fn().mockResolvedValue([
+        { swimmerId: 's1', status: 'ACTIVE', joinedAt: new Date('2026-02-01'),
+          swimmer: { id: 's1', name: 'Sam', email: 'a@b.c', claimedAt: null } },
+      ]) },
+      swimSession: { aggregate: jest.fn().mockResolvedValue({ _sum: { distanceMeters: 700 } }) },
+    };
+    const svc = new PoolsService(prisma);
+    const res = await svc.listSwimmers('o1', 'p1');
+    expect(res[0]).toMatchObject({ swimmerId: 's1', email: 'a@b.c', status: 'ACTIVE', mileageLast30dMeters: 700 });
+  });
+});
