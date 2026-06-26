@@ -71,3 +71,33 @@ describe('PoolsService.updatePool / archivePool', () => {
     expect(prisma.pool.update.mock.calls[0][0].data.archivedAt).toBeInstanceOf(Date);
   });
 });
+
+jest.mock('bcrypt', () => ({ hash: jest.fn().mockResolvedValue('HASH') }));
+
+describe('PoolsService.createSwimmer', () => {
+  const base = () => ({
+    pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
+    user: { findUnique: jest.fn(), create: jest.fn() },
+    registration: { upsert: jest.fn().mockResolvedValue({ status: 'ACTIVE', joinedAt: new Date('2026-02-01') }) },
+  });
+
+  it('新邮箱 → 建 SWIMMER + 随机密码 + 登记', async () => {
+    const prisma: any = base();
+    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.create.mockResolvedValue({ id: 's1', name: 'Sam', email: 'a@b.c', claimedAt: null });
+    const svc = new PoolsService(prisma);
+    const res = await svc.createSwimmer('o1', 'p1', { name: 'Sam', email: 'a@b.c' });
+    expect(prisma.user.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ email: 'a@b.c', role: 'SWIMMER', passwordHash: 'HASH' }) }));
+    expect(prisma.registration.upsert).toHaveBeenCalled();
+    expect(res).toMatchObject({ swimmerId: 's1', email: 'a@b.c', status: 'ACTIVE' });
+  });
+
+  it('邮箱已存在 → 复用用户，不再 create', async () => {
+    const prisma: any = base();
+    prisma.user.findUnique.mockResolvedValue({ id: 's9', name: 'Old', email: 'a@b.c', claimedAt: null });
+    const svc = new PoolsService(prisma);
+    const res = await svc.createSwimmer('o1', 'p1', { email: 'a@b.c' });
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(res.swimmerId).toBe('s9');
+  });
+});

@@ -1,8 +1,10 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { IsLatitude, IsLongitude, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsEmail, IsLatitude, IsLongitude, IsOptional, IsString, IsUUID } from 'class-validator';
 import { PrismaService } from '../prisma.service';
-import { PoolDetail, PoolSummary } from '@swim/shared';
+import { PoolDetail, PoolSummary, SwimmerListItem } from '@swim/shared';
 import { assertOwnsPool } from '../common/ownership';
+import { randomBytes } from 'crypto';
+import * as bcrypt from 'bcrypt';
 
 export class CreatePoolDto {
   @IsString() name: string;
@@ -20,6 +22,11 @@ export class UpdatePoolDto {
 
 export class RegisterSwimmerDto {
   @IsUUID() swimmerId: string;
+}
+
+export class CreateSwimmerDto {
+  @IsOptional() @IsString() name?: string;
+  @IsEmail() email: string;
 }
 
 @Injectable()
@@ -101,5 +108,26 @@ export class PoolsService {
       where: { poolId, status: 'ACTIVE' },
       include: { swimmer: { select: { id: true, name: true, email: true } } },
     });
+  }
+
+  async createSwimmer(ownerId: string, poolId: string, dto: CreateSwimmerDto): Promise<SwimmerListItem> {
+    await assertOwnsPool(this.prisma, ownerId, poolId);
+    let user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (!user) {
+      const passwordHash = await bcrypt.hash(randomBytes(24).toString('hex'), 12);
+      user = await this.prisma.user.create({
+        data: { email: dto.email, name: dto.name, passwordHash, role: 'SWIMMER' },
+      });
+    }
+    const reg = await this.prisma.registration.upsert({
+      where: { swimmerId_poolId: { swimmerId: user.id, poolId } },
+      create: { swimmerId: user.id, poolId, status: 'ACTIVE' },
+      update: { status: 'ACTIVE' },
+    });
+    return {
+      swimmerId: user.id, name: user.name, email: user.email,
+      status: reg.status, claimedAt: user.claimedAt ? user.claimedAt.toISOString() : null,
+      mileageLast30dMeters: 0, joinedAt: reg.joinedAt.toISOString(),
+    };
   }
 }

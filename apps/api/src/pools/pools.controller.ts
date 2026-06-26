@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@ne
 import { Role } from '@prisma/client';
 import {
   CreatePoolDto,
+  CreateSwimmerDto,
   PoolsService,
   RegisterSwimmerDto,
   UpdatePoolDto,
@@ -64,5 +65,11 @@ export class PoolsController {
   @Roles(Role.OWNER)
   archive(@CurrentUser() user: AuthedUser, @Param('id') id: string) {
     return this.pools.archivePool(user.id, id);
+  }
+
+  @Post(':id/swimmers')
+  @Roles(Role.OWNER)
+  createSwimmer(@CurrentUser() user: AuthedUser, @Param('id') id: string, @Body() dto: CreateSwimmerDto) {
+    return this.pools.createSwimmer(user.id, id, dto);
   }
 }
