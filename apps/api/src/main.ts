@@ -10,8 +10,13 @@ async function bootstrap() {
     new ValidationPipe({ whitelist: true, transform: true }),
   );
 
-  // TODO: lock CORS down to your client origins before launch.
-  app.enableCors();
+  // Lock CORS to a configured allowlist (comma-separated CORS_ORIGIN);
+  // defaults to the Vite dev origin for local development.
+  const origins = (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  app.enableCors({ origin: origins, credentials: true });
 
   await app.listen(process.env.PORT ?? 3000);
 }
