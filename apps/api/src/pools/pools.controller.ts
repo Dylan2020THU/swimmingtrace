@@ -5,6 +5,7 @@ import {
   CreateSwimmerDto,
   PoolsService,
   RegisterSwimmerDto,
+  UpdateMembershipDto,
   UpdatePoolDto,
 } from './pools.service';
 import {
@@ -71,5 +72,11 @@ export class PoolsController {
   @Roles(Role.OWNER)
   createSwimmer(@CurrentUser() user: AuthedUser, @Param('id') id: string, @Body() dto: CreateSwimmerDto) {
     return this.pools.createSwimmer(user.id, id, dto);
+  }
+
+  @Patch(':id/swimmers/:sid')
+  @Roles(Role.OWNER)
+  setMembership(@CurrentUser() user: AuthedUser, @Param('id') id: string, @Param('sid') sid: string, @Body() dto: UpdateMembershipDto) {
+    return this.pools.setMembershipStatus(user.id, id, sid, dto);
   }
 }

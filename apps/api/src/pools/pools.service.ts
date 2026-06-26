@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { IsEmail, IsLatitude, IsLongitude, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsEmail, IsEnum, IsLatitude, IsLongitude, IsOptional, IsString, IsUUID } from 'class-validator';
 import { PrismaService } from '../prisma.service';
 import { PoolDetail, PoolSummary, SwimmerListItem } from '@swim/shared';
 import { assertOwnsPool } from '../common/ownership';
@@ -27,6 +27,10 @@ export class RegisterSwimmerDto {
 export class CreateSwimmerDto {
   @IsOptional() @IsString() name?: string;
   @IsEmail() email: string;
+}
+
+export class UpdateMembershipDto {
+  @IsEnum({ ACTIVE: 'ACTIVE', INACTIVE: 'INACTIVE' }) status: 'ACTIVE' | 'INACTIVE';
 }
 
 @Injectable()
@@ -141,5 +145,13 @@ export class PoolsService {
       status: reg.status, claimedAt: user.claimedAt ? user.claimedAt.toISOString() : null,
       mileageLast30dMeters: 0, joinedAt: reg.joinedAt.toISOString(),
     };
+  }
+
+  async setMembershipStatus(ownerId: string, poolId: string, swimmerId: string, dto: UpdateMembershipDto) {
+    await assertOwnsPool(this.prisma, ownerId, poolId);
+    return this.prisma.registration.update({
+      where: { swimmerId_poolId: { swimmerId, poolId } },
+      data: { status: dto.status },
+    });
   }
 }

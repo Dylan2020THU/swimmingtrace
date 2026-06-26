@@ -117,3 +117,18 @@ describe('PoolsService.listSwimmers', () => {
     expect(res[0]).toMatchObject({ swimmerId: 's1', email: 'a@b.c', status: 'ACTIVE', mileageLast30dMeters: 700 });
   });
 });
+
+describe('PoolsService.setMembershipStatus', () => {
+  it('校验所有权后更新 Registration 状态', async () => {
+    const prisma: any = {
+      pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
+      registration: { update: jest.fn().mockResolvedValue({ status: 'INACTIVE' }) },
+    };
+    const svc = new PoolsService(prisma);
+    await svc.setMembershipStatus('o1', 'p1', 's1', { status: 'INACTIVE' });
+    expect(prisma.registration.update).toHaveBeenCalledWith({
+      where: { swimmerId_poolId: { swimmerId: 's1', poolId: 'p1' } },
+      data: { status: 'INACTIVE' },
+    });
+  });
+});
