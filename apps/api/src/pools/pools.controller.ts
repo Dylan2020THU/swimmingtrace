@@ -41,6 +41,12 @@ export class PoolsController {
     return this.pools.registerSwimmer(poolId, user.id, dto);
   }
 
+  @Get(':id')
+  @Roles(Role.OWNER)
+  detail(@CurrentUser() user: AuthedUser, @Param('id') id: string) {
+    return this.pools.getPool(user.id, id);
+  }
+
   @Get(':id/swimmers')
   @Roles(Role.OWNER)
   swimmers(@Param('id') poolId: string, @CurrentUser() user: AuthedUser) {

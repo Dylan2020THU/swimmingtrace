@@ -1,7 +1,8 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { IsLatitude, IsLongitude, IsOptional, IsString, IsUUID } from 'class-validator';
 import { PrismaService } from '../prisma.service';
-import { PoolSummary } from '@swim/shared';
+import { PoolDetail, PoolSummary } from '@swim/shared';
+import { assertOwnsPool } from '../common/ownership';
 
 export class CreatePoolDto {
   @IsString() name: string;
@@ -61,6 +62,17 @@ export class PoolsService {
       create: { swimmerId: dto.swimmerId, poolId },
       update: { status: 'ACTIVE' },
     });
+  }
+
+  async getPool(ownerId: string, poolId: string): Promise<PoolDetail> {
+    const pool = await assertOwnsPool(this.prisma, ownerId, poolId);
+    const memberCount = await this.prisma.registration.count({ where: { poolId, status: 'ACTIVE' } });
+    return {
+      id: pool.id, name: pool.name, address: pool.address,
+      latitude: pool.latitude, longitude: pool.longitude,
+      archivedAt: pool.archivedAt ? pool.archivedAt.toISOString() : null,
+      memberCount, createdAt: pool.createdAt.toISOString(),
+    };
   }
 
   async listSwimmers(poolId: string, ownerId: string) {
