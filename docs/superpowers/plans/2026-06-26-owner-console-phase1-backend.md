@@ -1231,6 +1231,8 @@ describe('StatsService.poolStats', () => {
     };
     const svc = new StatsService(prisma);
     const res = await svc.poolStats('o1', 'p1');
+    expect(prisma.registration.count).toHaveBeenNthCalledWith(1, { where: { poolId: 'p1' } });
+    expect(prisma.registration.count).toHaveBeenNthCalledWith(2, { where: { poolId: 'p1', status: 'ACTIVE' } });
     expect(res.memberCount).toBe(3);
     expect(res.activeMemberCount).toBe(2);
     expect(res.heatmap).toEqual([{ date: '2026-02-01', distanceMeters: 500 }]);
@@ -1268,7 +1270,7 @@ import { OverviewStats, PoolStats, HeatmapCell } from '@swim/shared';
 
   async poolStats(ownerId: string, poolId: string): Promise<PoolStats> {
     await assertOwnsPool(this.prisma, ownerId, poolId);
-    const memberCount = await this.prisma.registration.count({ where: { poolId, status: 'ACTIVE' } });
+    const memberCount = await this.prisma.registration.count({ where: { poolId } });
     const activeMemberCount = await this.prisma.registration.count({ where: { poolId, status: 'ACTIVE' } });
     const now = new Date();
     const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
@@ -1283,7 +1285,7 @@ import { OverviewStats, PoolStats, HeatmapCell } from '@swim/shared';
     };
   }
 ```
-> 注：`memberCount` 与 `activeMemberCount` 当前同口径（均 ACTIVE）；保留两字段以备 Phase 2 区分（总数含 INACTIVE）。
+> `memberCount` 统计全部登记（含 INACTIVE），`activeMemberCount` 仅 ACTIVE —— 与 `overview` 口径一致。
 
 - [ ] **Step 4: 加 controller 路由** — `stats.controller.ts`，类内加：
 
