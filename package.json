@@ -1,37 +1,14 @@
 {
-  "name": "swim-marathon-backend",
+  "name": "swimmingtrace",
   "version": "0.1.0",
-  "description": "MVP backend for swimming-marathon SaaS",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
   "scripts": {
-    "build": "nest build",
-    "start": "nest start",
-    "start:dev": "nest start --watch",
-    "start:prod": "node dist/main",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:generate": "prisma generate"
-  },
-  "dependencies": {
-    "@nestjs/common": "^10.3.0",
-    "@nestjs/config": "^3.2.0",
-    "@nestjs/core": "^10.3.0",
-    "@nestjs/jwt": "^10.2.0",
-    "@nestjs/passport": "^10.0.3",
-    "@nestjs/platform-express": "^10.3.0",
-    "@prisma/client": "^5.12.0",
-    "bcrypt": "^5.1.1",
-    "class-transformer": "^0.5.1",
-    "class-validator": "^0.14.1",
-    "passport": "^0.7.0",
-    "passport-jwt": "^4.0.1",
-    "reflect-metadata": "^0.2.1",
-    "rxjs": "^7.8.1"
+    "dev:api": "npm run start:dev -w @swim/api",
+    "build": "npm run build -w @swim/shared && npm run build -w @swim/api",
+    "test": "npm run test -w @swim/api"
   },
   "devDependencies": {
-    "@nestjs/cli": "^10.3.0",
-    "@types/bcrypt": "^5.0.2",
-    "@types/node": "^20.11.0",
-    "@types/passport-jwt": "^4.0.1",
-    "prisma": "^5.12.0",
-    "typescript": "^5.4.0"
+    "concurrently": "^8.2.2"
   }
 }
