@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma.service';
 
@@ -48,5 +48,7 @@ describe('Owner flows (e2e)', () => {
     const stats = await request(app.getHttpServer())
       .get(`/stats/swimmer/${swimmer.body.swimmerId}`).set('Authorization', `Bearer ${a}`).expect(200);
     expect(stats.body.summary.totalDistanceMeters).toBe(1000);
+    // Validates the real heatmap SQL (date_trunc + to_char + AT TIME ZONE) against Postgres.
+    expect(stats.body.heatmap).toContainEqual({ date: '2026-02-01', distanceMeters: 1000 });
   });
 });
