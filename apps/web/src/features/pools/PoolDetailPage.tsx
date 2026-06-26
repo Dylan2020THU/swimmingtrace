@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { usePool, useUpdatePool, useArchivePool } from '../../lib/queries';
 import { PoolForm } from './PoolForm';
 import { RosterTable } from '../swimmers/RosterTable';
+import { PoolDashboard } from '../dashboard/PoolDashboard';
 
 export function PoolDetailPage() {
   const { poolId = '' } = useParams();
@@ -48,7 +49,7 @@ export function PoolDetailPage() {
       </Card>
 
       <RosterTable poolId={poolId} />
-      {/* 本泳池看板：Task 11 填充 */}
+      <PoolDashboard poolId={poolId} />
 
       <Modal title="编辑泳池" open={editOpen} onOk={() => form.submit()} onCancel={() => setEditOpen(false)} confirmLoading={updatePool.isPending} okText="保存">
         <PoolForm form={form} onFinish={submitEdit} />
