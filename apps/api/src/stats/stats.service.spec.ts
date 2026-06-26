@@ -45,3 +45,22 @@ describe('StatsService.poolStats', () => {
     expect(res.trend).toEqual(res.heatmap);
   });
 });
+
+describe('StatsService.swimmerStats', () => {
+  it('非本人名下游泳者 → 403', async () => {
+    const prisma: any = { registration: { findFirst: jest.fn().mockResolvedValue(null) } };
+    const svc = new StatsService(prisma);
+    await expect(svc.swimmerStats('o1', 's1')).rejects.toBeInstanceOf(ForbiddenException);
+  });
+  it('本人名下 → 返回 summary + heatmap', async () => {
+    const prisma: any = {
+      registration: { findFirst: jest.fn().mockResolvedValue({ id: 'r1' }) },
+      swimSession: { aggregate: jest.fn().mockResolvedValue({ _sum: { distanceMeters: 3000, durationSeconds: 1800 }, _count: 4 }) },
+      $queryRaw: jest.fn().mockResolvedValue([{ day: new Date('2026-03-02T00:00:00Z'), total: BigInt(3000) }]),
+    };
+    const svc = new StatsService(prisma);
+    const res = await svc.swimmerStats('o1', 's1');
+    expect(res.summary).toEqual({ totalDistanceMeters: 3000, totalDurationSeconds: 1800, sessionCount: 4 });
+    expect(res.heatmap).toEqual([{ date: '2026-03-02', distanceMeters: 3000 }]);
+  });
+});

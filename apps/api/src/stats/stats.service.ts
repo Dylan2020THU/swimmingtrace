@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
-import { OverviewStats, PoolStats, HeatmapCell } from '@swim/shared';
-import { assertOwnsPool } from '../common/ownership';
+import { OverviewStats, PoolStats, SwimmerStats, HeatmapCell } from '@swim/shared';
+import { assertOwnsPool, assertOwnsSwimmer } from '../common/ownership';
 
 @Injectable()
 export class StatsService {
@@ -100,6 +99,34 @@ export class StatsService {
       memberCount, activeMemberCount,
       mileageThisMonthMeters: agg._sum.distanceMeters ?? 0,
       trend: daily, heatmap: daily,
+    };
+  }
+
+  private async dailyBySwimmer(swimmerId: string, year: number): Promise<HeatmapCell[]> {
+    const start = new Date(Date.UTC(year, 0, 1));
+    const end = new Date(Date.UTC(year + 1, 0, 1));
+    const rows = await this.prisma.$queryRaw<{ day: Date; total: bigint }[]>`
+      SELECT date_trunc('day', "swamAt") AS day, SUM("distanceMeters") AS total
+      FROM "SwimSession"
+      WHERE "swimmerId" = ${swimmerId} AND "swamAt" >= ${start} AND "swamAt" < ${end}
+      GROUP BY day ORDER BY day ASC
+    `;
+    return rows.map((r) => ({ date: r.day.toISOString().slice(0, 10), distanceMeters: Number(r.total) }));
+  }
+
+  async swimmerStats(ownerId: string, swimmerId: string): Promise<SwimmerStats> {
+    await assertOwnsSwimmer(this.prisma, ownerId, swimmerId);
+    const agg = await this.prisma.swimSession.aggregate({
+      where: { swimmerId }, _sum: { distanceMeters: true, durationSeconds: true }, _count: true,
+    });
+    const heatmap = await this.dailyBySwimmer(swimmerId, new Date().getUTCFullYear());
+    return {
+      summary: {
+        totalDistanceMeters: agg._sum.distanceMeters ?? 0,
+        totalDurationSeconds: agg._sum.durationSeconds ?? 0,
+        sessionCount: agg._count,
+      },
+      heatmap,
     };
   }
 }

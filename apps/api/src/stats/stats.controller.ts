@@ -35,4 +35,10 @@ export class StatsController {
   poolStats(@CurrentUser() user: { id: string }, @Param('id') id: string) {
     return this.stats.poolStats(user.id, id);
   }
+
+  @Get('swimmer/:sid')
+  @Roles(Role.OWNER)
+  swimmerStats(@CurrentUser() user: { id: string }, @Param('sid') sid: string) {
+    return this.stats.swimmerStats(user.id, sid);
+  }
 }
