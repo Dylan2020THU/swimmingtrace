@@ -34,6 +34,7 @@ model User {
   sessions      SwimSession[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  claimedAt     DateTime?
 }
 
 model Pool {
@@ -49,6 +50,7 @@ model Pool {
   sessions      SwimSession[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  archivedAt    DateTime?
 }
 
 // Links a swimmer to a pool (the "registered in his place" relationship).
