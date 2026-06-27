@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { OverviewStats, PoolStats, SwimmerStats, HeatmapCell } from '@swim/shared';
@@ -6,7 +7,10 @@ import { assertOwnsPool, assertOwnsSwimmer } from '../common/ownership';
 
 @Injectable()
 export class StatsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private config: ConfigService,
+  ) {}
 
   /**
    * Per-day distance for one filter (swimmer or pool) within a calendar year.
@@ -16,7 +20,7 @@ export class StatsService {
    * in SQL keeps the payload to ~365 rows max. Empty days are simply absent.
    */
   private async dailyDistance(where: Prisma.Sql, year: number): Promise<HeatmapCell[]> {
-    const tz = process.env.APP_TIMEZONE ?? 'UTC';
+    const tz = this.config.get<string>('APP_TIMEZONE') ?? 'UTC';
     // Convert the stored UTC instant to the operator's local wall-clock, then
     // both bucket AND filter on that same local value so the calendar-year
     // window lines up with the day buckets (no off-by-one at year edges when
