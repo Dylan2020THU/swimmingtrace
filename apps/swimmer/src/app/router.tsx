@@ -8,6 +8,7 @@ import { RecordPage } from '../features/record/RecordPage';
 import { HistoryPage } from '../features/history/HistoryPage';
 import { ProfilePage } from '../features/profile/ProfilePage';
 import { ChallengesPage } from '../features/challenges/ChallengesPage';
+import { NearbyPoolsPage } from '../features/nearby/NearbyPoolsPage';
 
 export function AppRouter() {
   return (
@@ -21,6 +22,7 @@ export function AppRouter() {
             <Route path="/challenges" element={<ChallengesPage />} />
             <Route path="/record" element={<RecordPage />} />
             <Route path="/history" element={<HistoryPage />} />
+            <Route path="/nearby" element={<NearbyPoolsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Route>
         </Route>

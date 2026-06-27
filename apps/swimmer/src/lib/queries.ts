@@ -12,6 +12,13 @@ export const queryKeys = {
 
 export const useMyChallenges = () => useQuery({ queryKey: queryKeys.myChallenges, queryFn: ep.getMyChallenges });
 
+export const useNearbyPlaces = (coords: { lat: number; lng: number } | null, radiusMeters = 5000) =>
+  useQuery({
+    queryKey: ['nearby', coords?.lat, coords?.lng, radiusMeters],
+    queryFn: () => ep.getNearbyPlaces(coords!.lat, coords!.lng, radiusMeters),
+    enabled: !!coords,
+  });
+
 export const useMyPools = () => useQuery({ queryKey: queryKeys.myPools, queryFn: ep.getMyPools });
 export const useMySummary = () => useQuery({ queryKey: queryKeys.mySummary, queryFn: ep.getMySummary });
 export const useMyHeatmap = (year: number) =>

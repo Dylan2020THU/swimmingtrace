@@ -1,7 +1,7 @@
 import { api } from './client';
 import type {
   LoginResponse, MeResponse, ClaimInfoResponse, ClaimAccountDto,
-  MyPoolItem, CreateSessionDto, SwimSessionItem, HeatmapCell, SwimmerStats, MyChallengeItem,
+  MyPoolItem, CreateSessionDto, SwimSessionItem, HeatmapCell, SwimmerStats, MyChallengeItem, NearbyPlace,
 } from '@swim/shared';
 
 export const login = (b: { email: string; password: string }) =>
@@ -21,3 +21,5 @@ export const getMySummary = () =>
 export const getMyHeatmap = (year?: number) =>
   api.get<HeatmapCell[]>('/stats/heatmap', { params: year ? { year } : {} }).then((r) => r.data);
 export const getMyChallenges = () => api.get<MyChallengeItem[]>('/me/challenges').then((r) => r.data);
+export const getNearbyPlaces = (lat: number, lng: number, radiusMeters = 5000) =>
+  api.get<NearbyPlace[]>('/places/nearby', { params: { lat, lng, radiusMeters } }).then((r) => r.data);
