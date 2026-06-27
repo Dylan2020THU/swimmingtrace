@@ -50,9 +50,25 @@ model Pool {
   owner         User           @relation("PoolOwner", fields: [ownerId], references: [id])
   registrations Registration[]
   sessions      SwimSession[]
+  challenges    Challenge[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   archivedAt    DateTime?
+}
+
+// A time-boxed collective distance goal for a pool, with a per-swimmer leaderboard
+// computed from SwimSession within [startDate, endDate).
+model Challenge {
+  id                 String   @id @default(uuid())
+  poolId             String
+  pool               Pool     @relation(fields: [poolId], references: [id])
+  name               String
+  goalDistanceMeters Int
+  startDate          DateTime
+  endDate            DateTime
+  createdAt          DateTime @default(now())
+
+  @@index([poolId])
 }
 
 // Links a swimmer to a pool (the "registered in his place" relationship).
