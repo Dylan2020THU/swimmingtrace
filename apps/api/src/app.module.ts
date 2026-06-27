@@ -9,6 +9,7 @@ import { PoolsModule } from './pools/pools.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { StatsModule } from './stats/stats.module';
 import { PlacesModule } from './places/places.module';
+import { MeModule } from './me/me.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { PlacesModule } from './places/places.module';
     SessionsModule,
     StatsModule,
     PlacesModule,
+    MeModule,
   ],
   providers: [
     PrismaService,
