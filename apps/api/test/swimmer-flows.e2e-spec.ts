@@ -80,4 +80,13 @@ describe('Swimmer claim & self-record (e2e)', () => {
       .send({ distanceMeters: 100, swamAt: `${new Date().getUTCFullYear()}-03-02T08:00:00.000Z`, poolId: '00000000-0000-0000-0000-000000000000' })
       .expect(403);
   });
+
+  it('防接管：owner 不能把他人 OWNER 邮箱加为游泳者 → 409', async () => {
+    await regOwner('victim@x.com').expect(201); // victim 是一个 OWNER 账号
+    const attacker = (await regOwner('attacker@x.com')).body.accessToken;
+    const pool = await request(srv()).post('/pools').set('Authorization', `Bearer ${attacker}`).send({ name: 'Evil' }).expect(201);
+    await request(srv())
+      .post(`/pools/${pool.body.id}/swimmers`).set('Authorization', `Bearer ${attacker}`)
+      .send({ email: 'victim@x.com' }).expect(409);
+  });
 });

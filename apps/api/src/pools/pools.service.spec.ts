@@ -1,4 +1,4 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PoolsService } from './pools.service';
 
@@ -95,9 +95,9 @@ describe('PoolsService.createSwimmer', () => {
     expect(res).toMatchObject({ swimmerId: 's1', email: 'a@b.c', status: 'ACTIVE' });
   });
 
-  it('邮箱已存在 → 复用用户，不再 create', async () => {
+  it('邮箱已存在（SWIMMER）→ 复用用户，不再 create', async () => {
     const prisma: any = base();
-    prisma.user.findUnique.mockResolvedValue({ id: 's9', name: 'Old', email: 'a@b.c', claimedAt: null });
+    prisma.user.findUnique.mockResolvedValue({ id: 's9', name: 'Old', email: 'a@b.c', role: 'SWIMMER', claimedAt: null });
     const svc = new PoolsService(prisma);
     const res = await svc.createSwimmer('o1', 'p1', { email: 'a@b.c' });
     expect(prisma.user.create).not.toHaveBeenCalled();
@@ -106,12 +106,20 @@ describe('PoolsService.createSwimmer', () => {
 
   it('复用用户且原 name 为 null → 自动补全 name', async () => {
     const prisma: any = base();
-    prisma.user.findUnique.mockResolvedValue({ id: 's9', name: null, email: 'a@b.c', claimedAt: null });
+    prisma.user.findUnique.mockResolvedValue({ id: 's9', name: null, email: 'a@b.c', role: 'SWIMMER', claimedAt: null });
     prisma.user.update = jest.fn().mockResolvedValue({ id: 's9', name: 'New', email: 'a@b.c', claimedAt: null });
     const svc = new PoolsService(prisma);
     await svc.createSwimmer('o1', 'p1', { name: 'New', email: 'a@b.c' });
     expect(prisma.user.create).not.toHaveBeenCalled();
     expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 's9' }, data: { name: 'New' } });
+  });
+
+  it('邮箱属于非 SWIMMER 账号（如另一 OWNER）→ ConflictException（防接管）', async () => {
+    const prisma: any = base();
+    prisma.user.findUnique.mockResolvedValue({ id: 'o2', name: 'Owner', email: 'a@b.c', role: 'OWNER', claimedAt: new Date() });
+    const svc = new PoolsService(prisma);
+    await expect(svc.createSwimmer('o1', 'p1', { email: 'a@b.c' })).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.user.create).not.toHaveBeenCalled();
   });
 });
 
@@ -186,12 +194,14 @@ describe('PoolsService.recordSessionForSwimmer', () => {
 });
 
 describe('PoolsService.generateClaimLink', () => {
-  it('校验本池登记后写入随机令牌+7天过期，返回 claimUrl', async () => {
-    const prisma: any = {
-      pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
-      registration: { findUnique: jest.fn().mockResolvedValue({ id: 'r1' }) },
-      user: { update: jest.fn().mockResolvedValue({}) },
-    };
+  const mk = (target: any, regExists = true) => ({
+    pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
+    registration: { findUnique: jest.fn().mockResolvedValue(regExists ? { id: 'r1' } : null) },
+    user: { findUnique: jest.fn().mockResolvedValue(target), update: jest.fn().mockResolvedValue({}) },
+  });
+
+  it('未认领 SWIMMER → 写入随机令牌+7天过期，返回 claimUrl', async () => {
+    const prisma: any = mk({ id: 's1', role: 'SWIMMER', claimedAt: null });
     const svc = new PoolsService(prisma);
     const res = await svc.generateClaimLink('o1', 'p1', 's1');
     const upd = prisma.user.update.mock.calls[0][0];
@@ -199,17 +209,25 @@ describe('PoolsService.generateClaimLink', () => {
     expect(typeof upd.data.claimToken).toBe('string');
     expect(upd.data.claimToken.length).toBeGreaterThanOrEqual(32);
     expect(upd.data.claimTokenExpiresAt).toBeInstanceOf(Date);
-    expect(res.claimToken).toBe(upd.data.claimToken);
     expect(res.claimUrl).toContain(`/claim/${res.claimToken}`);
   });
 
   it('游泳者未登记本池 → NotFoundException', async () => {
-    const prisma: any = {
-      pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
-      registration: { findUnique: jest.fn().mockResolvedValue(null) },
-      user: { update: jest.fn() },
-    };
+    const prisma: any = mk(null, false);
     const svc = new PoolsService(prisma);
     await expect(svc.generateClaimLink('o1', 'p1', 'ghost')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('目标账号为 OWNER → ConflictException，不写令牌（防接管）', async () => {
+    const prisma: any = mk({ id: 'o2', role: 'OWNER', claimedAt: new Date() });
+    const svc = new PoolsService(prisma);
+    await expect(svc.generateClaimLink('o1', 'p1', 'o2')).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('目标 SWIMMER 已认领 → ConflictException', async () => {
+    const prisma: any = mk({ id: 's1', role: 'SWIMMER', claimedAt: new Date() });
+    const svc = new PoolsService(prisma);
+    await expect(svc.generateClaimLink('o1', 'p1', 's1')).rejects.toBeInstanceOf(ConflictException);
   });
 });

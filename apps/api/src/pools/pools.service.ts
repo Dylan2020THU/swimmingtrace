@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { IsDateString, IsEmail, IsEnum, IsInt, IsLatitude, IsLongitude, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { PrismaService } from '../prisma.service';
@@ -141,6 +141,10 @@ export class PoolsService {
       user = await this.prisma.user.create({
         data: { email: dto.email, name: dto.name, passwordHash, role: 'SWIMMER' },
       });
+    } else if (user.role !== 'SWIMMER') {
+      // Never adopt an existing non-swimmer account (e.g. another OWNER) into a
+      // roster by email — that would let it be claimed and taken over.
+      throw new ConflictException('该邮箱已被其他账号占用，无法作为游泳者添加');
     } else if (dto.name && !user.name) {
       user = await this.prisma.user.update({ where: { id: user.id }, data: { name: dto.name } });
     }
@@ -196,6 +200,12 @@ export class PoolsService {
       where: { swimmerId_poolId: { swimmerId, poolId } },
     });
     if (!reg) throw new NotFoundException('该游泳者未登记在本泳池');
+    // Only an owner-provisioned, never-claimed SWIMMER can be issued a claim link
+    // — never an owner/admin or an already-claimed account.
+    const target = await this.prisma.user.findUnique({ where: { id: swimmerId } });
+    if (!target || target.role !== 'SWIMMER' || target.claimedAt) {
+      throw new ConflictException('该账号无法生成认领链接');
+    }
     const claimToken = randomBytes(32).toString('hex');
     const claimTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     await this.prisma.user.update({ where: { id: swimmerId }, data: { claimToken, claimTokenExpiresAt } });

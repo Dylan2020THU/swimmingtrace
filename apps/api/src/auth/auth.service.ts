@@ -38,8 +38,10 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const role = dto.role === Role.OWNER ? Role.OWNER : Role.SWIMMER;
 
+    // A self-registered user owns their own credentials → mark claimed so their
+    // account can never be treated as an owner-provisioned, claimable account.
     const user = await this.prisma.user.create({
-      data: { email: dto.email, passwordHash, name: dto.name, role },
+      data: { email: dto.email, passwordHash, name: dto.name, role, claimedAt: new Date() },
     });
     return this.sign(user.id, user.email, user.role);
   }
