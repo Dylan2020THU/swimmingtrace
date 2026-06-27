@@ -35,6 +35,8 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   claimedAt     DateTime?
+  claimToken          String?   @unique
+  claimTokenExpiresAt DateTime?
 }
 
 model Pool {
