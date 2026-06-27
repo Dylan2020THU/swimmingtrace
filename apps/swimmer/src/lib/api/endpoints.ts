@@ -1,7 +1,7 @@
 import { api } from './client';
 import type {
   LoginResponse, MeResponse, ClaimInfoResponse, ClaimAccountDto,
-  MyPoolItem, CreateSessionDto, SwimSessionItem, HeatmapCell, SwimmerStats,
+  MyPoolItem, CreateSessionDto, SwimSessionItem, HeatmapCell, SwimmerStats, MyChallengeItem,
 } from '@swim/shared';
 
 export const login = (b: { email: string; password: string }) =>
@@ -20,3 +20,4 @@ export const getMySummary = () =>
   api.get<SwimmerStats['summary']>('/stats/summary').then((r) => r.data);
 export const getMyHeatmap = (year?: number) =>
   api.get<HeatmapCell[]>('/stats/heatmap', { params: year ? { year } : {} }).then((r) => r.data);
+export const getMyChallenges = () => api.get<MyChallengeItem[]>('/me/challenges').then((r) => r.data);

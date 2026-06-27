@@ -7,7 +7,10 @@ export const queryKeys = {
   mySummary: ['mySummary'] as const,
   myHeatmap: (year: number) => ['myHeatmap', year] as const,
   mySessions: ['mySessions'] as const,
+  myChallenges: ['myChallenges'] as const,
 };
+
+export const useMyChallenges = () => useQuery({ queryKey: queryKeys.myChallenges, queryFn: ep.getMyChallenges });
 
 export const useMyPools = () => useQuery({ queryKey: queryKeys.myPools, queryFn: ep.getMyPools });
 export const useMySummary = () => useQuery({ queryKey: queryKeys.mySummary, queryFn: ep.getMySummary });

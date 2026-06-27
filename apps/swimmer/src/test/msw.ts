@@ -5,6 +5,7 @@ import { http, HttpResponse } from 'msw';
 export const handlers = [
   http.get('/api/auth/me', () => HttpResponse.json({ id: 's1', email: 'sam@x.com', role: 'SWIMMER' })),
   http.get('/api/me/pools', () => HttpResponse.json([])),
+  http.get('/api/me/challenges', () => HttpResponse.json([])),
   http.get('/api/sessions/me', () => HttpResponse.json([])),
   http.get('/api/stats/summary', () =>
     HttpResponse.json({ totalDistanceMeters: 0, totalDurationSeconds: 0, sessionCount: 0 }),

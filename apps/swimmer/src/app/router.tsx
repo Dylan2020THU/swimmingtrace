@@ -7,6 +7,7 @@ import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { RecordPage } from '../features/record/RecordPage';
 import { HistoryPage } from '../features/history/HistoryPage';
 import { ProfilePage } from '../features/profile/ProfilePage';
+import { ChallengesPage } from '../features/challenges/ChallengesPage';
 
 export function AppRouter() {
   return (
@@ -17,6 +18,7 @@ export function AppRouter() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
             <Route path="/" element={<DashboardPage />} />
+            <Route path="/challenges" element={<ChallengesPage />} />
             <Route path="/record" element={<RecordPage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/profile" element={<ProfilePage />} />

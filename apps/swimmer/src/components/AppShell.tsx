@@ -3,6 +3,7 @@ import { TabBar } from 'antd-mobile';
 
 const tabs = [
   { key: '/', title: '看板' },
+  { key: '/challenges', title: '挑战' },
   { key: '/history', title: '历史' },
   { key: '/profile', title: '我的' },
 ];
