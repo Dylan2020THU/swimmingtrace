@@ -1,4 +1,4 @@
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, GoneException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 jest.mock('bcrypt', () => ({
@@ -66,6 +66,41 @@ describe('AuthService.login', () => {
     const svc = new AuthService(prisma, jwt);
     const res = await svc.login({ email: 'a@b.c', password: 'right' });
     expect(jwt.sign).toHaveBeenCalledWith({ sub: 'u1', email: 'a@b.c', role: 'OWNER' });
+    expect(res).toEqual({ accessToken: 'signed.jwt.token' });
+  });
+});
+
+const future = new Date(Date.now() + 1_000_000);
+
+describe('AuthService.getClaimInfo', () => {
+  it('有效令牌 → 返回 name/email', async () => {
+    const prisma: any = { user: { findUnique: jest.fn().mockResolvedValue({ name: 'Sam', email: 's@x.c', claimedAt: null, claimTokenExpiresAt: future }) } };
+    await expect(new AuthService(prisma, mkJwt()).getClaimInfo('tok')).resolves.toEqual({ name: 'Sam', email: 's@x.c' });
+  });
+  it('令牌不存在 → NotFound', async () => {
+    const prisma: any = { user: { findUnique: jest.fn().mockResolvedValue(null) } };
+    await expect(new AuthService(prisma, mkJwt()).getClaimInfo('x')).rejects.toBeInstanceOf(NotFoundException);
+  });
+  it('过期 → Gone', async () => {
+    const prisma: any = { user: { findUnique: jest.fn().mockResolvedValue({ email: 's@x.c', claimedAt: null, claimTokenExpiresAt: new Date(Date.now() - 1000) }) } };
+    await expect(new AuthService(prisma, mkJwt()).getClaimInfo('tok')).rejects.toBeInstanceOf(GoneException);
+  });
+  it('已认领 → Conflict', async () => {
+    const prisma: any = { user: { findUnique: jest.fn().mockResolvedValue({ email: 's@x.c', claimedAt: new Date(), claimTokenExpiresAt: future }) } };
+    await expect(new AuthService(prisma, mkJwt()).getClaimInfo('tok')).rejects.toBeInstanceOf(ConflictException);
+  });
+});
+
+describe('AuthService.claim', () => {
+  it('有效 → 写 pw/claimedAt、清令牌、签发 token', async () => {
+    const update = jest.fn().mockResolvedValue({});
+    const prisma: any = { user: { findUnique: jest.fn().mockResolvedValue({ id: 'u1', email: 's@x.c', role: 'SWIMMER', claimedAt: null, claimTokenExpiresAt: future }), update } };
+    const jwt = mkJwt();
+    const res = await new AuthService(prisma, jwt).claim({ token: 'tok', password: 'password123' });
+    const data = update.mock.calls[0][0].data;
+    expect(data).toMatchObject({ passwordHash: 'HASHED', claimToken: null, claimTokenExpiresAt: null });
+    expect(data.claimedAt).toBeInstanceOf(Date);
+    expect(jwt.sign).toHaveBeenCalledWith({ sub: 'u1', email: 's@x.c', role: 'SWIMMER' });
     expect(res).toEqual({ accessToken: 'signed.jwt.token' });
   });
 });
