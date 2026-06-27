@@ -13,4 +13,10 @@ export class MeController {
   pools(@CurrentUser() user: { id: string }) {
     return this.me.myPools(user.id);
   }
+
+  @Get('challenges')
+  @Roles(Role.SWIMMER)
+  challenges(@CurrentUser() user: { id: string }) {
+    return this.me.myChallenges(user.id);
+  }
 }
