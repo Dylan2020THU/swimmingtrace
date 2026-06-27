@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import {
   IsDateString,
   IsInt,
@@ -19,7 +19,17 @@ export class CreateSessionDto {
 export class SessionsService {
   constructor(private prisma: PrismaService) {}
 
-  create(swimmerId: string, dto: CreateSessionDto) {
+  async create(swimmerId: string, dto: CreateSessionDto) {
+    // A swimmer may only attribute a self-recorded swim to a pool they are
+    // actively registered in — so the data lands cleanly in that pool's stats.
+    if (dto.poolId) {
+      const reg = await this.prisma.registration.findUnique({
+        where: { swimmerId_poolId: { swimmerId, poolId: dto.poolId } },
+      });
+      if (!reg || reg.status !== 'ACTIVE') {
+        throw new ForbiddenException('你未在该泳池有效登记');
+      }
+    }
     return this.prisma.swimSession.create({
       data: {
         swimmerId,
