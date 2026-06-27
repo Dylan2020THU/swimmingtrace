@@ -7,13 +7,14 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "concurrently -n api,web -c blue,green npm:dev:api npm:dev:web",
+    "dev": "concurrently -n api,web,swimmer -c blue,green,magenta npm:dev:api npm:dev:web npm:dev:swimmer",
     "dev:api": "npm run start:dev -w @swim/api",
     "dev:web": "npm run dev -w @swim/web",
-    "build": "npm run build -w @swim/shared && npm run build -w @swim/api && npm run build -w @swim/web",
-    "test": "npm run test -w @swim/api && npm run test -w @swim/web",
+    "dev:swimmer": "npm run dev -w @swim/swimmer",
+    "build": "npm run build -w @swim/shared && npm run build -w @swim/api && npm run build -w @swim/web && npm run build -w @swim/swimmer",
+    "test": "npm run test -w @swim/api && npm run test -w @swim/web && npm run test -w @swim/swimmer",
     "test:e2e": "npm run test:e2e -w @swim/api",
-    "lint": "npm run lint -w @swim/api && npm run lint -w @swim/web",
+    "lint": "npm run lint -w @swim/api && npm run lint -w @swim/web && npm run lint -w @swim/swimmer",
     "format": "prettier --write \"apps/**/src/**/*.{ts,tsx}\" \"packages/**/src/**/*.ts\"",
     "db:up": "docker compose -f apps/api/docker-compose.yml up -d",
     "db:down": "docker compose -f apps/api/docker-compose.yml down",
