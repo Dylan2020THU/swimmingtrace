@@ -7,6 +7,8 @@
 /** The placeholder secret shipped in .env.example — must never be used to sign real tokens. */
 export const WEAK_JWT_SECRET = 'change-me-in-prod';
 const MIN_JWT_SECRET_LENGTH = 16;
+const NODE_ENVS = ['development', 'test', 'production'];
+const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace'];
 
 export function validateEnv(config: Record<string, unknown>): Record<string, unknown> {
   const secret = config.JWT_SECRET;
@@ -25,5 +27,26 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
     throw new Error('DATABASE_URL is required but is missing.');
   }
 
-  return config;
+  const nodeEnv = (config.NODE_ENV as string) ?? 'development';
+  if (!NODE_ENVS.includes(nodeEnv)) {
+    throw new Error(`NODE_ENV must be one of ${NODE_ENVS.join(', ')}; got "${nodeEnv}".`);
+  }
+  const logLevel = (config.LOG_LEVEL as string) ?? 'info';
+  if (!LOG_LEVELS.includes(logLevel)) {
+    throw new Error(`LOG_LEVEL must be one of ${LOG_LEVELS.join(', ')}; got "${logLevel}".`);
+  }
+  const port = String((config.PORT as string) ?? '3000');
+  if (!/^\d+$/.test(port)) {
+    throw new Error(`PORT must be a positive integer; got "${port}".`);
+  }
+
+  return {
+    ...config,
+    NODE_ENV: nodeEnv,
+    LOG_LEVEL: logLevel,
+    PORT: port,
+    CORS_ORIGIN: (config.CORS_ORIGIN as string) ?? 'http://localhost:5173',
+    SWIMMER_APP_URL: (config.SWIMMER_APP_URL as string) ?? 'http://localhost:5174',
+    APP_TIMEZONE: (config.APP_TIMEZONE as string) ?? 'UTC',
+  };
 }
