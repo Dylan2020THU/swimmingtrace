@@ -32,6 +32,20 @@ export interface UpdateMembershipDto { status: RegistrationStatus; }
 // 代录
 export interface CreateSessionDto { distanceMeters: number; durationSeconds?: number; swamAt: string; }
 
+// claim — owner generates a one-time claim link; swimmer claims to set a password.
+export interface ClaimLinkResponse { claimToken: string; claimUrl: string; expiresAt: string; }
+export interface ClaimInfoResponse { name: string | null; email: string; }
+export interface ClaimAccountDto { token: string; password: string; }
+
+// the swimmer's own pools (for selecting where to self-record)
+export interface MyPoolItem { id: string; name: string; }
+
+// a row of the swimmer's own session history (GET /sessions/me)
+export interface SwimSessionItem {
+  id: string; poolId: string | null; distanceMeters: number;
+  durationSeconds: number | null; swamAt: string;
+}
+
 // stats
 export interface HeatmapCell { date: string; distanceMeters: number; }
 export interface OverviewStats {
