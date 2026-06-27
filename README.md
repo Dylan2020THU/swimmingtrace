@@ -120,11 +120,23 @@ e2e 覆盖关键鉴权/所有权链路（owner 越权 → 403）与"建会员 + 
 
 **游泳者端接口**：`GET /auth/claim/:token`、`POST /auth/claim`（公开，限流）；`GET /me/pools`、`POST /sessions`、`GET /sessions/me`、`GET /stats/summary`、`GET /stats/heatmap`（`@Roles(SWIMMER)`）。owner 侧 `POST /pools/:id/swimmers/:sid/claim-link`。
 
+## 挑战与排行榜（Phase 2-B）
+
+owner 可在泳池下发起**带目标的挑战**（名称、目标里程、起止日期），系统基于既有游泳记录（含游泳者自录）实时算出**进度**与**个人排行榜**：
+
+- owner：单泳池详情「挑战」卡 → 新建挑战 / 进入挑战详情（进度 + 排行榜）。
+- 游泳者：移动端「挑战」Tab → 我所属池的进行中挑战、池进度、我的里程与名次。
+
+进度 = 窗口内全池总里程 vs 目标；排行榜 = 窗口内按游泳者聚合里程降序。设计见
+[`docs/superpowers/specs/2026-06-27-challenges-leaderboard-design.md`](docs/superpowers/specs/2026-06-27-challenges-leaderboard-design.md)。
+
+**挑战接口**：owner `POST`/`GET /pools/:id/challenges`、`GET`/`DELETE /challenges/:cid`（`@Roles(OWNER)`）；游泳者 `GET /me/challenges`（`@Roles(SWIMMER)`）。
+
 ## 仍预留的 Phase 2 面（非死代码）
 
 - `POST /pools/:id/register`（按 UUID 自助加入泳池的旧路径，已被认领流程取代，暂留）
 - `GET /places/nearby`（PostGIS 附近泳池，偏游泳者地图场景）
-- 赛事 / 挑战 / 排行榜、形态切换、refresh token —— 见设计文档，各自另立子项目。
+- 赛事容器/报名、形态切换、refresh token —— 见设计文档，各自另立子项目。
 
 ## 文档
 

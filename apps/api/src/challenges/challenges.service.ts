@@ -37,7 +37,7 @@ export class ChallengesService {
       JOIN "User" u ON u."id" = s."swimmerId"
       WHERE s."poolId" = ${poolId} AND s."swamAt" >= ${start} AND s."swamAt" < ${end}
       GROUP BY s."swimmerId", u."name", u."email"
-      ORDER BY SUM(s."distanceMeters") DESC`);
+      ORDER BY SUM(s."distanceMeters") DESC, s."swimmerId" ASC`);
     return rows.map((r) => ({ swimmerId: r.swimmerId, name: r.name, email: r.email, distanceMeters: Number(r.distanceMeters) }));
   }
 

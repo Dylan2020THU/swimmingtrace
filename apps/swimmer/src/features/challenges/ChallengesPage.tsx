@@ -1,4 +1,4 @@
-import { Card, ErrorBlock, ProgressBar } from 'antd-mobile';
+import { Card, DotLoading, ErrorBlock, ProgressBar } from 'antd-mobile';
 import dayjs from 'dayjs';
 import { useMyChallenges } from '../../lib/queries';
 
@@ -6,7 +6,13 @@ export function ChallengesPage() {
   const challenges = useMyChallenges();
   const data = challenges.data ?? [];
 
-  if (!challenges.isLoading && data.length === 0) {
+  if (challenges.isError) {
+    return <ErrorBlock status="default" title="加载失败" description="请稍后重试" />;
+  }
+  if (challenges.isLoading) {
+    return <div style={{ padding: 16, textAlign: 'center' }}><DotLoading /></div>;
+  }
+  if (data.length === 0) {
     return <ErrorBlock status="empty" title="暂无进行中的挑战" description="你所属泳池目前没有进行中的挑战。" />;
   }
 

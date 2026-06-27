@@ -1,4 +1,4 @@
-import { Button, Card, Popconfirm, Progress, Skeleton, Space, Table, App } from 'antd';
+import { Button, Card, Popconfirm, Progress, Result, Skeleton, Space, Table, App } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import type { LeaderboardRow } from '@swim/shared';
@@ -11,6 +11,15 @@ export function ChallengeDetailPage() {
   const navigate = useNavigate();
   const { message } = App.useApp();
 
+  if (challenge.isError) {
+    return (
+      <Result
+        status="404"
+        title="挑战不存在或无权访问"
+        extra={<Button type="primary" onClick={() => navigate(`/pools/${poolId}`)}>返回泳池</Button>}
+      />
+    );
+  }
   if (!challenge.data) return <Skeleton active />;
   const c = challenge.data;
   const pct = Math.min(100, Math.round((c.totalDistanceMeters / Math.max(1, c.goalDistanceMeters)) * 100));
