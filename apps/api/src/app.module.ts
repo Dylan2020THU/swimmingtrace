@@ -14,6 +14,7 @@ import { StatsModule } from './stats/stats.module';
 import { PlacesModule } from './places/places.module';
 import { MeModule } from './me/me.module';
 import { ChallengesModule } from './challenges/challenges.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { ChallengesModule } from './challenges/challenges.module';
     PlacesModule,
     MeModule,
     ChallengesModule,
+    HealthModule,
   ],
   providers: [
     PrismaService,
