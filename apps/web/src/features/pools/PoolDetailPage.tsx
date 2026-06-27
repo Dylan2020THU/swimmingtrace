@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Card, Descriptions, Form, Modal, Popconfirm, Skeleton, Space, App } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
-import { usePool, useUpdatePool, useArchivePool } from '../../lib/queries';
+import { usePool, useUpdatePool, useArchivePool, usePoolChallenges } from '../../lib/queries';
 import { PoolForm } from './PoolForm';
 import { RosterTable } from '../swimmers/RosterTable';
 import { PoolDashboard } from '../dashboard/PoolDashboard';
@@ -12,6 +12,11 @@ export function PoolDetailPage() {
   const pool = usePool(poolId);
   const updatePool = useUpdatePool(poolId);
   const archivePool = useArchivePool();
+  const challenges = usePoolChallenges(poolId);
+  const now = Date.now();
+  const hasActiveChallenge = (challenges.data ?? []).some(
+    (c) => Date.parse(c.startDate) <= now && now < Date.parse(c.endDate),
+  );
   const [editOpen, setEditOpen] = useState(false);
   const [form] = Form.useForm();
   const navigate = useNavigate();
@@ -49,8 +54,9 @@ export function PoolDetailPage() {
         </Descriptions>
       </Card>
 
+      {hasActiveChallenge && <ChallengesCard poolId={poolId} />}
       <RosterTable poolId={poolId} />
-      <ChallengesCard poolId={poolId} />
+      {!hasActiveChallenge && <ChallengesCard poolId={poolId} />}
       <PoolDashboard poolId={poolId} />
 
       <Modal title="编辑泳池" open={editOpen} onOk={() => form.submit()} onCancel={() => setEditOpen(false)} confirmLoading={updatePool.isPending} okText="保存">

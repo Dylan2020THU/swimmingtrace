@@ -3,7 +3,7 @@ import type {
   LoginResponse, MeResponse, CreatePoolDto, UpdatePoolDto, PoolSummary, PoolDetail,
   CreateSwimmerDto, SwimmerListItem, UpdateMembershipDto, CreateSessionDto,
   OverviewStats, PoolStats, SwimmerStats, ClaimLinkResponse,
-  ChallengeSummary, ChallengeDetail, CreateChallengeDto,
+  ChallengeSummary, ChallengeDetail, CreateChallengeDto, ActiveChallengeItem,
 } from '@swim/shared';
 
 export const login = (b: { email: string; password: string }) =>
@@ -37,6 +37,8 @@ export const createChallenge = (poolId: string, b: CreateChallengeDto) =>
 export const getChallenge = (cid: string) =>
   api.get<ChallengeDetail>(`/challenges/${cid}`).then((r) => r.data);
 export const deleteChallenge = (cid: string) => api.delete(`/challenges/${cid}`).then((r) => r.data);
+export const getActiveChallenges = () =>
+  api.get<ActiveChallengeItem[]>('/challenges/active').then((r) => r.data);
 
 export const getOverview = () => api.get<OverviewStats>('/stats/overview').then((r) => r.data);
 export const getPoolStats = (id: string) => api.get<PoolStats>(`/stats/pool/${id}`).then((r) => r.data);

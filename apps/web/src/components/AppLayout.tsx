@@ -1,12 +1,13 @@
-import { Layout, Menu, Select, Button, Space, Typography } from 'antd';
+import { Layout, Menu, Select, Button, Space, Tag, Typography } from 'antd';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
-import { usePools } from '../lib/queries';
+import { usePools, useActiveChallenges } from '../lib/queries';
 import { useAuthStore } from '../lib/auth-store';
 
 export function AppLayout() {
   const navigate = useNavigate();
   const { poolId } = useParams();
   const { data: pools } = usePools();
+  const active = useActiveChallenges();
   const user = useAuthStore((s) => s.user);
   const clear = useAuthStore((s) => s.clear);
 
@@ -15,7 +16,10 @@ export function AppLayout() {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Layout.Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography.Text strong style={{ color: '#fff' }}>Swim 控制台</Typography.Text>
+        <Space>
+          <Typography.Text strong style={{ color: '#fff' }}>Swim 控制台</Typography.Text>
+          {(active.data?.length ?? 0) > 0 && <Tag color="gold">赛事进行中</Tag>}
+        </Space>
         <Space>
           <Select
             placeholder="切换泳池" style={{ width: 200 }} value={poolId}

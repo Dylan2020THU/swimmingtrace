@@ -5,6 +5,7 @@ import type { PoolSummary } from '@swim/shared';
 import { useOverview, usePools, useCreatePool } from '../../lib/queries';
 import { StatCards } from '../dashboard/StatCards';
 import { PoolForm } from './PoolForm';
+import { ActiveChallengesBanner } from '../challenges/ActiveChallengesBanner';
 
 export function OverviewPage() {
   const overview = useOverview();
@@ -30,6 +31,7 @@ export function OverviewPage() {
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <ActiveChallengesBanner />
       {overview.data ? <StatCards stats={overview.data} /> : <Skeleton active />}
       <Card
         title="我的泳池"

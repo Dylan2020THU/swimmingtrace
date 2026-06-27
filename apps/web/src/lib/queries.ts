@@ -11,8 +11,11 @@ export const queryKeys = {
   swimmerStats: (sid: string) => ['swimmerStats', sid] as const,
   challenges: (poolId: string) => ['challenges', poolId] as const,
   challenge: (cid: string) => ['challenge', cid] as const,
+  activeChallenges: ['challenges', 'active'] as const,
 };
 
+export const useActiveChallenges = () =>
+  useQuery({ queryKey: queryKeys.activeChallenges, queryFn: ep.getActiveChallenges });
 export const usePoolChallenges = (poolId: string) =>
   useQuery({ queryKey: queryKeys.challenges(poolId), queryFn: () => ep.listChallenges(poolId) });
 export const useChallenge = (cid: string) =>
