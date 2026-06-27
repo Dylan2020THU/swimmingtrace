@@ -28,7 +28,8 @@ jobs:
       # Used by e2e (globalSetup connects to `swim`, provisions `swim_test`).
       DATABASE_URL: postgresql://swim:swim@localhost:5432/swim?schema=public
       JWT_SECRET: ci-test-secret-0123456789abcdef
-      CORS_ORIGIN: http://localhost:5173
+      CORS_ORIGIN: http://localhost:5173,http://localhost:5174
+      SWIMMER_APP_URL: http://localhost:5174
 
     steps:
       - uses: actions/checkout@v4
@@ -45,10 +46,10 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Build (shared + api + web)
+      - name: Build (shared + api + web + swimmer)
         run: npm run build
 
-      - name: Unit tests (api + web)
+      - name: Unit tests (api + web + swimmer)
         run: npm test
 
       - name: E2E tests (api, against Postgres service)

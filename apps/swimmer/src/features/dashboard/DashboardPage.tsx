@@ -1,4 +1,4 @@
-import { Button } from 'antd-mobile';
+import { Button, DotLoading, ErrorBlock } from 'antd-mobile';
 import { useNavigate } from 'react-router-dom';
 import { useMySummary, useMyHeatmap } from '../../lib/queries';
 import { SummaryCards } from './SummaryCards';
@@ -11,7 +11,15 @@ export function DashboardPage() {
   const navigate = useNavigate();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {summary.data && <SummaryCards summary={summary.data} />}
+      {summary.isError ? (
+        <ErrorBlock status="default" title="加载失败" description="请稍后重试" />
+      ) : summary.data ? (
+        <SummaryCards summary={summary.data} />
+      ) : (
+        <div style={{ padding: 16, textAlign: 'center' }}>
+          <DotLoading />
+        </div>
+      )}
       <Button block color="primary" size="large" onClick={() => navigate('/record')}>
         记录一次游泳
       </Button>

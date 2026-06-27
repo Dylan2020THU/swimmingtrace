@@ -12,8 +12,11 @@ export function HistoryPage() {
       ) : (
         <List>
           {data.map((s) => (
-            <List.Item key={s.id} description={dayjs(s.swamAt).format('YYYY-MM-DD')} extra={`${s.distanceMeters} 米`}>
-              {s.durationSeconds ? `${s.durationSeconds} 秒` : '—'}
+            <List.Item
+              key={s.id}
+              description={`${dayjs(s.swamAt).format('YYYY-MM-DD')}${s.durationSeconds ? ` · ${s.durationSeconds} 秒` : ''}`}
+            >
+              {s.distanceMeters} 米
             </List.Item>
           ))}
         </List>
