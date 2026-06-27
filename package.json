@@ -21,7 +21,9 @@
     "db:wait": "wait-on tcp:127.0.0.1:5432",
     "db:migrate": "npm run prisma:deploy -w @swim/api",
     "db:seed": "npm run seed -w @swim/api",
-    "setup": "npm install && npm run db:up && npm run db:wait && npm run db:migrate && npm run db:seed"
+    "setup": "npm install && npm run db:up && npm run db:wait && npm run db:migrate && npm run db:seed",
+    "prod:up": "docker compose -f docker-compose.prod.yml up -d --build",
+    "prod:down": "docker compose -f docker-compose.prod.yml down"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.7.0",

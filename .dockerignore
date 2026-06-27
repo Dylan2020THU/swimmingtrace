@@ -1,0 +1,11 @@
+**/node_modules
+**/dist
+.git
+.github
+docs
+apps/web
+apps/swimmer
+**/.env
+**/*.spec.ts
+**/*.test.ts
+apps/api/test
