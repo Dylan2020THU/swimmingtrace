@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CreatePoolDto, UpdatePoolDto, CreateSwimmerDto, UpdateMembershipDto, CreateSessionDto } from '@swim/shared';
+import type { CreatePoolDto, UpdatePoolDto, CreateSwimmerDto, UpdateMembershipDto, CreateSessionDto, CreateChallengeDto } from '@swim/shared';
 import * as ep from './api/endpoints';
 
 export const queryKeys = {
@@ -9,7 +9,28 @@ export const queryKeys = {
   overview: ['overview'] as const,
   poolStats: (id: string) => ['poolStats', id] as const,
   swimmerStats: (sid: string) => ['swimmerStats', sid] as const,
+  challenges: (poolId: string) => ['challenges', poolId] as const,
+  challenge: (cid: string) => ['challenge', cid] as const,
 };
+
+export const usePoolChallenges = (poolId: string) =>
+  useQuery({ queryKey: queryKeys.challenges(poolId), queryFn: () => ep.listChallenges(poolId) });
+export const useChallenge = (cid: string) =>
+  useQuery({ queryKey: queryKeys.challenge(cid), queryFn: () => ep.getChallenge(cid) });
+export function useCreateChallenge(poolId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (b: CreateChallengeDto) => ep.createChallenge(poolId, b),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.challenges(poolId) }),
+  });
+}
+export function useDeleteChallenge(poolId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (cid: string) => ep.deleteChallenge(cid),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.challenges(poolId) }),
+  });
+}
 
 export const usePools = (includeArchived = false) =>
   useQuery({ queryKey: [...queryKeys.pools, includeArchived], queryFn: () => ep.listPools(includeArchived) });

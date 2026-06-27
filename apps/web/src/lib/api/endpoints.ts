@@ -3,6 +3,7 @@ import type {
   LoginResponse, MeResponse, CreatePoolDto, UpdatePoolDto, PoolSummary, PoolDetail,
   CreateSwimmerDto, SwimmerListItem, UpdateMembershipDto, CreateSessionDto,
   OverviewStats, PoolStats, SwimmerStats, ClaimLinkResponse,
+  ChallengeSummary, ChallengeDetail, CreateChallengeDto,
 } from '@swim/shared';
 
 export const login = (b: { email: string; password: string }) =>
@@ -28,6 +29,14 @@ export const recordSession = (poolId: string, sid: string, b: CreateSessionDto) 
   api.post(`/pools/${poolId}/swimmers/${sid}/sessions`, b).then((r) => r.data);
 export const generateClaimLink = (poolId: string, sid: string) =>
   api.post<ClaimLinkResponse>(`/pools/${poolId}/swimmers/${sid}/claim-link`).then((r) => r.data);
+
+export const listChallenges = (poolId: string) =>
+  api.get<ChallengeSummary[]>(`/pools/${poolId}/challenges`).then((r) => r.data);
+export const createChallenge = (poolId: string, b: CreateChallengeDto) =>
+  api.post<ChallengeSummary>(`/pools/${poolId}/challenges`, b).then((r) => r.data);
+export const getChallenge = (cid: string) =>
+  api.get<ChallengeDetail>(`/challenges/${cid}`).then((r) => r.data);
+export const deleteChallenge = (cid: string) => api.delete(`/challenges/${cid}`).then((r) => r.data);
 
 export const getOverview = () => api.get<OverviewStats>('/stats/overview').then((r) => r.data);
 export const getPoolStats = (id: string) => api.get<PoolStats>(`/stats/pool/${id}`).then((r) => r.data);

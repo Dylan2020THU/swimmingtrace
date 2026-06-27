@@ -5,6 +5,7 @@ import { AppLayout } from '../components/AppLayout';
 import { OverviewPage } from '../features/pools/OverviewPage';
 import { PoolDetailPage } from '../features/pools/PoolDetailPage';
 import { SwimmerDetailPage } from '../features/swimmers/SwimmerDetailPage';
+import { ChallengeDetailPage } from '../features/challenges/ChallengeDetailPage';
 
 export function AppRouter() {
   return (
@@ -17,6 +18,7 @@ export function AppRouter() {
             <Route path="/pools" element={<OverviewPage />} />
             <Route path="/pools/:poolId" element={<PoolDetailPage />} />
             <Route path="/pools/:poolId/swimmers/:sid" element={<SwimmerDetailPage />} />
+            <Route path="/pools/:poolId/challenges/:cid" element={<ChallengeDetailPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/pools" replace />} />

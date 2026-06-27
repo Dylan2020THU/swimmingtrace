@@ -5,6 +5,7 @@ import { usePool, useUpdatePool, useArchivePool } from '../../lib/queries';
 import { PoolForm } from './PoolForm';
 import { RosterTable } from '../swimmers/RosterTable';
 import { PoolDashboard } from '../dashboard/PoolDashboard';
+import { ChallengesCard } from '../challenges/ChallengesCard';
 
 export function PoolDetailPage() {
   const { poolId = '' } = useParams();
@@ -49,6 +50,7 @@ export function PoolDetailPage() {
       </Card>
 
       <RosterTable poolId={poolId} />
+      <ChallengesCard poolId={poolId} />
       <PoolDashboard poolId={poolId} />
 
       <Modal title="编辑泳池" open={editOpen} onOk={() => form.submit()} onCancel={() => setEditOpen(false)} confirmLoading={updatePool.isPending} okText="保存">
