@@ -22,6 +22,12 @@ export class ChallengesController {
     return this.challenges.listForPool(u.id, poolId);
   }
 
+  @Get('challenges/active')
+  @Roles(Role.OWNER)
+  active(@CurrentUser() u: AuthedUser) {
+    return this.challenges.activeForOwner(u.id);
+  }
+
   @Get('challenges/:cid')
   @Roles(Role.OWNER)
   detail(@CurrentUser() u: AuthedUser, @Param('cid') cid: string) {

@@ -77,3 +77,29 @@ describe('ChallengesService.detail', () => {
     await expect(new ChallengesService(prisma).detail('o1', 'c1')).rejects.toBeInstanceOf(ForbiddenException);
   });
 });
+
+describe('ChallengesService.activeForOwner', () => {
+  it('取未归档池中进行中的挑战，含 poolName + 进度', async () => {
+    const now = new Date();
+    const prisma: any = {
+      pool: { findMany: jest.fn().mockResolvedValue([{ id: 'p1' }]) },
+      challenge: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'c1', poolId: 'p1', name: 'C', goalDistanceMeters: 100000,
+            startDate: new Date(now.getTime() - 86400000), endDate: new Date(now.getTime() + 86400000), pool: { name: '晨曦' },
+          },
+        ]),
+      },
+      swimSession: { aggregate: jest.fn().mockResolvedValue({ _sum: { distanceMeters: 4200 } }) },
+    };
+    const res = await new ChallengesService(prisma).activeForOwner('o1');
+    expect(prisma.pool.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { ownerId: 'o1', archivedAt: null } }));
+    expect(res[0]).toMatchObject({ id: 'c1', poolName: '晨曦', totalDistanceMeters: 4200 });
+  });
+
+  it('无泳池 → 空数组', async () => {
+    const prisma: any = { pool: { findMany: jest.fn().mockResolvedValue([]) } };
+    expect(await new ChallengesService(prisma).activeForOwner('o1')).toEqual([]);
+  });
+});

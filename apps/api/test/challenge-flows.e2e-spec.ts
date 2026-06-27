@@ -66,6 +66,16 @@ describe('Challenges & leaderboard (e2e)', () => {
     const mine = await request(srv()).get('/me/challenges').set({ Authorization: `Bearer ${swToken}` }).expect(200);
     expect(mine.body[0]).toMatchObject({ id: challenge.body.id, myDistanceMeters: 1000, myRank: 1, totalDistanceMeters: 1500 });
 
+    // event-mode surface: GET /challenges/active includes the running challenge with poolName+progress
+    const active = await request(srv()).get('/challenges/active').set(oh).expect(200);
+    expect(active.body.find((a: any) => a.id === challenge.body.id)).toMatchObject({ poolName: 'P', totalDistanceMeters: 1500 });
+
+    // a finished challenge (window in the past) is NOT active
+    const past = await request(srv()).post(`/pools/${pool.body.id}/challenges`).set(oh)
+      .send({ name: '去年挑战', goalDistanceMeters: 100, startDate: `${year - 1}-01-01`, endDate: `${year - 1}-02-01` }).expect(201);
+    const active2 = await request(srv()).get('/challenges/active').set(oh).expect(200);
+    expect(active2.body.map((a: any) => a.id)).not.toContain(past.body.id);
+
     // another owner cannot view this challenge
     const other = (await regOwner('other@x.com')).body.accessToken;
     await request(srv()).get(`/challenges/${challenge.body.id}`).set({ Authorization: `Bearer ${other}` }).expect(403);

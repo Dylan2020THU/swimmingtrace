@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { IsDateString, IsInt, IsString, Min } from 'class-validator';
 import { PrismaService } from '../prisma.service';
-import { ChallengeDetail, ChallengeSummary, CreateChallengeDto, LeaderboardRow } from '@swim/shared';
+import { ActiveChallengeItem, ChallengeDetail, ChallengeSummary, CreateChallengeDto, LeaderboardRow } from '@swim/shared';
 import { assertOwnsChallenge, assertOwnsPool } from '../common/ownership';
 
 export class CreateChallengeBody implements CreateChallengeDto {
@@ -58,6 +58,28 @@ export class ChallengesService {
           _sum: { distanceMeters: true },
         });
         return this.toSummary(c, agg._sum.distanceMeters ?? 0);
+      }),
+    );
+  }
+
+  /** Currently-running challenges across the owner's non-archived pools (drives the "event mode" surfaces). */
+  async activeForOwner(ownerId: string): Promise<ActiveChallengeItem[]> {
+    const pools = await this.prisma.pool.findMany({ where: { ownerId, archivedAt: null }, select: { id: true } });
+    const poolIds = pools.map((p) => p.id);
+    if (poolIds.length === 0) return [];
+    const now = new Date();
+    const list = await this.prisma.challenge.findMany({
+      where: { poolId: { in: poolIds }, startDate: { lte: now }, endDate: { gt: now } },
+      include: { pool: { select: { name: true } } },
+      orderBy: { endDate: 'asc' },
+    });
+    return Promise.all(
+      list.map(async (c) => {
+        const agg = await this.prisma.swimSession.aggregate({
+          where: { poolId: c.poolId, swamAt: { gte: c.startDate, lt: c.endDate } },
+          _sum: { distanceMeters: true },
+        });
+        return { ...this.toSummary(c, agg._sum.distanceMeters ?? 0), poolName: c.pool.name };
       }),
     );
   }
