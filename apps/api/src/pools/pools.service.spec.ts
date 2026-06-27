@@ -1,4 +1,5 @@
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PoolsService } from './pools.service';
 
 const mkPrisma = (o: any = {}) => ({
@@ -143,19 +144,43 @@ describe('PoolsService.setMembershipStatus', () => {
       data: { status: 'INACTIVE' },
     });
   });
+
+  it('游泳者未登记在本池（P2025）→ NotFoundException', async () => {
+    const p2025 = new Prisma.PrismaClientKnownRequestError('not found', { code: 'P2025', clientVersion: 'test' });
+    const prisma: any = {
+      pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
+      registration: { update: jest.fn().mockRejectedValue(p2025) },
+    };
+    const svc = new PoolsService(prisma);
+    await expect(svc.setMembershipStatus('o1', 'p1', 'ghost', { status: 'INACTIVE' })).rejects.toBeInstanceOf(NotFoundException);
+  });
 });
 
 describe('PoolsService.recordSessionForSwimmer', () => {
-  it('校验泳池与游泳者归属后创建 session', async () => {
+  it('校验泳池与本池登记后创建 session', async () => {
     const prisma: any = {
       pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
-      registration: { findFirst: jest.fn().mockResolvedValue({ id: 'r1' }) },
+      registration: { findUnique: jest.fn().mockResolvedValue({ id: 'r1' }) },
       swimSession: { create: jest.fn().mockResolvedValue({ id: 'ss1' }) },
     };
     const svc = new PoolsService(prisma);
     await svc.recordSessionForSwimmer('o1', 'p1', 's1', { distanceMeters: 1000, swamAt: '2026-02-01T08:00:00.000Z' });
+    expect(prisma.registration.findUnique).toHaveBeenCalledWith({ where: { swimmerId_poolId: { swimmerId: 's1', poolId: 'p1' } } });
     expect(prisma.swimSession.create).toHaveBeenCalledWith({
       data: { swimmerId: 's1', poolId: 'p1', distanceMeters: 1000, durationSeconds: undefined, swamAt: new Date('2026-02-01T08:00:00.000Z') },
     });
+  });
+
+  it('游泳者未登记在本池 → NotFoundException，不创建 session', async () => {
+    const prisma: any = {
+      pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
+      registration: { findUnique: jest.fn().mockResolvedValue(null) },
+      swimSession: { create: jest.fn() },
+    };
+    const svc = new PoolsService(prisma);
+    await expect(
+      svc.recordSessionForSwimmer('o1', 'p1', 'ghost', { distanceMeters: 1000, swamAt: '2026-02-01T08:00:00.000Z' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.swimSession.create).not.toHaveBeenCalled();
   });
 });

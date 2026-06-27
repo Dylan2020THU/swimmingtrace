@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma.service';
 
@@ -41,12 +41,17 @@ describe('Owner flows (e2e)', () => {
       .post(`/pools/${pool.body.id}/swimmers`).set('Authorization', `Bearer ${a}`)
       .send({ name: 'Sam', email: 'sam@x.com' }).expect(201);
     expect(swimmer.body.email).toBe('sam@x.com');
+    // Use the current year so this stays within the stats heatmap's current-year
+    // window regardless of when it runs (APP_TIMEZONE is UTC in tests).
+    const day = `${new Date().getUTCFullYear()}-02-01`;
     await request(app.getHttpServer())
       .post(`/pools/${pool.body.id}/swimmers/${swimmer.body.swimmerId}/sessions`)
       .set('Authorization', `Bearer ${a}`)
-      .send({ distanceMeters: 1000, swamAt: '2026-02-01T08:00:00.000Z' }).expect(201);
+      .send({ distanceMeters: 1000, swamAt: `${day}T08:00:00.000Z` }).expect(201);
     const stats = await request(app.getHttpServer())
       .get(`/stats/swimmer/${swimmer.body.swimmerId}`).set('Authorization', `Bearer ${a}`).expect(200);
     expect(stats.body.summary.totalDistanceMeters).toBe(1000);
+    // Validates the real heatmap SQL (date_trunc + to_char + AT TIME ZONE) against Postgres.
+    expect(stats.body.heatmap).toContainEqual({ date: day, distanceMeters: 1000 });
   });
 });

@@ -8,7 +8,6 @@
     "experimentalDecorators": true,
     "strictNullChecks": true,
     "esModuleInterop": true,
-    "skipLibCheck": true,
-    "paths": { "@swim/shared": ["../../packages/shared/src/index.ts"] }
+    "skipLibCheck": true
   }
 }

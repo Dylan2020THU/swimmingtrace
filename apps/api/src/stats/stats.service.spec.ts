@@ -33,7 +33,7 @@ describe('StatsService.poolStats', () => {
       pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
       registration: { count: jest.fn().mockResolvedValueOnce(3).mockResolvedValueOnce(2) },
       swimSession: { aggregate: jest.fn().mockResolvedValue({ _sum: { distanceMeters: 500 } }) },
-      $queryRaw: jest.fn().mockResolvedValue([{ day: new Date('2026-02-01T00:00:00Z'), total: BigInt(500) }]),
+      $queryRaw: jest.fn().mockResolvedValue([{ day: '2026-02-01', total: BigInt(500) }]),
     };
     const svc = new StatsService(prisma);
     const res = await svc.poolStats('o1', 'p1');
@@ -56,7 +56,7 @@ describe('StatsService.swimmerStats', () => {
     const prisma: any = {
       registration: { findFirst: jest.fn().mockResolvedValue({ id: 'r1' }) },
       swimSession: { aggregate: jest.fn().mockResolvedValue({ _sum: { distanceMeters: 3000, durationSeconds: 1800 }, _count: 4 }) },
-      $queryRaw: jest.fn().mockResolvedValue([{ day: new Date('2026-03-02T00:00:00Z'), total: BigInt(3000) }]),
+      $queryRaw: jest.fn().mockResolvedValue([{ day: '2026-03-02', total: BigInt(3000) }]),
     };
     const svc = new StatsService(prisma);
     const res = await svc.swimmerStats('o1', 's1');

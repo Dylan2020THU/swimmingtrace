@@ -1,6 +1,6 @@
 vi.mock('@uiw/react-heat-map', () => ({ default: () => null }));
 
-import { describe, it, expect } from 'vitest';
+import { it, expect } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';

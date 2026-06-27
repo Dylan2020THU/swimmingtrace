@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { OverviewStats, PoolStats, SwimmerStats, HeatmapCell } from '@swim/shared';
 import { assertOwnsPool, assertOwnsSwimmer } from '../common/ownership';
@@ -8,33 +9,37 @@ export class StatsService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * GitHub-contributions-style data: one row per day the swimmer swam,
-   * with the total distance that day. The client maps distance -> color
-   * intensity. Empty days are simply absent (render them as the lightest box).
-   *
-   * Aggregating in SQL keeps the payload to ~365 rows max.
+   * Per-day distance for one filter (swimmer or pool) within a calendar year.
+   * Days are bucketed in APP_TIMEZONE (default 'UTC') so a swim near local
+   * midnight lands on the right calendar cell; the date is formatted to
+   * 'YYYY-MM-DD' in SQL to avoid any JS-side timezone round-trip. Aggregating
+   * in SQL keeps the payload to ~365 rows max. Empty days are simply absent.
    */
-  async heatmap(swimmerId: string, year: number): Promise<HeatmapCell[]> {
-    const start = new Date(Date.UTC(year, 0, 1));
-    const end = new Date(Date.UTC(year + 1, 0, 1));
-
-    const rows = await this.prisma.$queryRaw<
-      { day: Date; total: bigint }[]
-    >`
-      SELECT date_trunc('day', "swamAt") AS day,
-             SUM("distanceMeters")      AS total
+  private async dailyDistance(where: Prisma.Sql, year: number): Promise<HeatmapCell[]> {
+    const tz = process.env.APP_TIMEZONE ?? 'UTC';
+    // Convert the stored UTC instant to the operator's local wall-clock, then
+    // both bucket AND filter on that same local value so the calendar-year
+    // window lines up with the day buckets (no off-by-one at year edges when
+    // tz != UTC).
+    const localTs = Prisma.sql`("swamAt" AT TIME ZONE 'UTC' AT TIME ZONE ${tz})`;
+    const yearStart = `${year}-01-01`;
+    const yearEnd = `${year + 1}-01-01`;
+    const rows = await this.prisma.$queryRaw<{ day: string; total: bigint }[]>(Prisma.sql`
+      SELECT to_char(date_trunc('day', ${localTs}), 'YYYY-MM-DD') AS day,
+             SUM("distanceMeters") AS total
       FROM "SwimSession"
-      WHERE "swimmerId" = ${swimmerId}
-        AND "swamAt" >= ${start}
-        AND "swamAt" <  ${end}
+      WHERE ${where}
+        AND ${localTs} >= ${yearStart}::timestamp
+        AND ${localTs} <  ${yearEnd}::timestamp
       GROUP BY day
       ORDER BY day ASC
-    `;
+    `);
+    return rows.map((r) => ({ date: r.day, distanceMeters: Number(r.total) }));
+  }
 
-    return rows.map((r) => ({
-      date: r.day.toISOString().slice(0, 10),
-      distanceMeters: Number(r.total),
-    }));
+  /** GitHub-contributions-style per-day distance for a swimmer (swimmer self-view, Phase 2). */
+  async heatmap(swimmerId: string, year: number): Promise<HeatmapCell[]> {
+    return this.dailyDistance(Prisma.sql`"swimmerId" = ${swimmerId}`, year);
   }
 
   async overview(ownerId: string): Promise<OverviewStats> {
@@ -73,16 +78,8 @@ export class StatsService {
     };
   }
 
-  private async dailyByPool(poolId: string, year: number): Promise<HeatmapCell[]> {
-    const start = new Date(Date.UTC(year, 0, 1));
-    const end = new Date(Date.UTC(year + 1, 0, 1));
-    const rows = await this.prisma.$queryRaw<{ day: Date; total: bigint }[]>`
-      SELECT date_trunc('day', "swamAt") AS day, SUM("distanceMeters") AS total
-      FROM "SwimSession"
-      WHERE "poolId" = ${poolId} AND "swamAt" >= ${start} AND "swamAt" < ${end}
-      GROUP BY day ORDER BY day ASC
-    `;
-    return rows.map((r) => ({ date: r.day.toISOString().slice(0, 10), distanceMeters: Number(r.total) }));
+  private dailyByPool(poolId: string, year: number): Promise<HeatmapCell[]> {
+    return this.dailyDistance(Prisma.sql`"poolId" = ${poolId}`, year);
   }
 
   async poolStats(ownerId: string, poolId: string): Promise<PoolStats> {
@@ -102,16 +99,8 @@ export class StatsService {
     };
   }
 
-  private async dailyBySwimmer(swimmerId: string, year: number): Promise<HeatmapCell[]> {
-    const start = new Date(Date.UTC(year, 0, 1));
-    const end = new Date(Date.UTC(year + 1, 0, 1));
-    const rows = await this.prisma.$queryRaw<{ day: Date; total: bigint }[]>`
-      SELECT date_trunc('day', "swamAt") AS day, SUM("distanceMeters") AS total
-      FROM "SwimSession"
-      WHERE "swimmerId" = ${swimmerId} AND "swamAt" >= ${start} AND "swamAt" < ${end}
-      GROUP BY day ORDER BY day ASC
-    `;
-    return rows.map((r) => ({ date: r.day.toISOString().slice(0, 10), distanceMeters: Number(r.total) }));
+  private dailyBySwimmer(swimmerId: string, year: number): Promise<HeatmapCell[]> {
+    return this.dailyDistance(Prisma.sql`"swimmerId" = ${swimmerId}`, year);
   }
 
   async swimmerStats(ownerId: string, swimmerId: string): Promise<SwimmerStats> {
