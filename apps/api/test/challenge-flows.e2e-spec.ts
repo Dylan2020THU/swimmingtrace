@@ -76,6 +76,12 @@ describe('Challenges & leaderboard (e2e)', () => {
     const active2 = await request(srv()).get('/challenges/active').set(oh).expect(200);
     expect(active2.body.map((a: any) => a.id)).not.toContain(past.body.id);
 
+    // a not-yet-started (future) challenge is NOT active either
+    const future = await request(srv()).post(`/pools/${pool.body.id}/challenges`).set(oh)
+      .send({ name: '明年挑战', goalDistanceMeters: 100, startDate: `${year + 1}-01-01`, endDate: `${year + 2}-01-01` }).expect(201);
+    const active3 = await request(srv()).get('/challenges/active').set(oh).expect(200);
+    expect(active3.body.map((a: any) => a.id)).not.toContain(future.body.id);
+
     // another owner cannot view this challenge
     const other = (await regOwner('other@x.com')).body.accessToken;
     await request(srv()).get(`/challenges/${challenge.body.id}`).set({ Authorization: `Bearer ${other}` }).expect(403);

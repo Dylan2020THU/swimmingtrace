@@ -24,14 +24,20 @@ export function useCreateChallenge(poolId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (b: CreateChallengeDto) => ep.createChallenge(poolId, b),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.challenges(poolId) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.challenges(poolId) });
+      qc.invalidateQueries({ queryKey: queryKeys.activeChallenges });
+    },
   });
 }
 export function useDeleteChallenge(poolId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (cid: string) => ep.deleteChallenge(cid),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.challenges(poolId) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.challenges(poolId) });
+      qc.invalidateQueries({ queryKey: queryKeys.activeChallenges });
+    },
   });
 }
 

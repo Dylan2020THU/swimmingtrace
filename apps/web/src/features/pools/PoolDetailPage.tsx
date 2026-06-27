@@ -14,9 +14,12 @@ export function PoolDetailPage() {
   const archivePool = useArchivePool();
   const challenges = usePoolChallenges(poolId);
   const now = Date.now();
-  const hasActiveChallenge = (challenges.data ?? []).some(
-    (c) => Date.parse(c.startDate) <= now && now < Date.parse(c.endDate),
-  );
+  // Only hoist once challenges are loaded (avoids a layout jump) and only for a
+  // non-archived pool (matching the backend's `active` definition).
+  const hasActiveChallenge =
+    challenges.isSuccess &&
+    !pool.data?.archivedAt &&
+    (challenges.data ?? []).some((c) => Date.parse(c.startDate) <= now && now < Date.parse(c.endDate));
   const [editOpen, setEditOpen] = useState(false);
   const [form] = Form.useForm();
   const navigate = useNavigate();
@@ -54,9 +57,9 @@ export function PoolDetailPage() {
         </Descriptions>
       </Card>
 
-      {hasActiveChallenge && <ChallengesCard poolId={poolId} />}
+      {hasActiveChallenge && <ChallengesCard key="challenges-card" poolId={poolId} />}
       <RosterTable poolId={poolId} />
-      {!hasActiveChallenge && <ChallengesCard poolId={poolId} />}
+      {!hasActiveChallenge && <ChallengesCard key="challenges-card" poolId={poolId} />}
       <PoolDashboard poolId={poolId} />
 
       <Modal title="编辑泳池" open={editOpen} onOk={() => form.submit()} onCancel={() => setEditOpen(false)} confirmLoading={updatePool.isPending} okText="保存">
