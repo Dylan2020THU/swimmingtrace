@@ -46,6 +46,22 @@ export interface SwimSessionItem {
   durationSeconds: number | null; swamAt: string;
 }
 
+// challenges — a time-boxed collective pool distance goal with a per-swimmer leaderboard
+export interface CreateChallengeDto { name: string; goalDistanceMeters: number; startDate: string; endDate: string; }
+export interface ChallengeSummary {
+  id: string; poolId: string; name: string;
+  goalDistanceMeters: number; startDate: string; endDate: string;
+  totalDistanceMeters: number; // window-total distance for the pool
+}
+export interface LeaderboardRow { swimmerId: string; name: string | null; email: string; distanceMeters: number; }
+export interface ChallengeDetail extends ChallengeSummary { leaderboard: LeaderboardRow[]; }
+export interface MyChallengeItem {
+  id: string; poolId: string; poolName: string; name: string;
+  goalDistanceMeters: number; totalDistanceMeters: number;
+  myDistanceMeters: number; myRank: number | null; // null = no sessions in window
+  startDate: string; endDate: string;
+}
+
 // stats
 export interface HeatmapCell { date: string; distanceMeters: number; }
 export interface OverviewStats {
