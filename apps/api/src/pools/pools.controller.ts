@@ -86,4 +86,10 @@ export class PoolsController {
   record(@CurrentUser() user: AuthedUser, @Param('id') id: string, @Param('sid') sid: string, @Body() dto: RecordSessionDto) {
     return this.pools.recordSessionForSwimmer(user.id, id, sid, dto);
   }
+
+  @Post(':id/swimmers/:sid/claim-link')
+  @Roles(Role.OWNER)
+  claimLink(@CurrentUser() user: AuthedUser, @Param('id') id: string, @Param('sid') sid: string) {
+    return this.pools.generateClaimLink(user.id, id, sid);
+  }
 }

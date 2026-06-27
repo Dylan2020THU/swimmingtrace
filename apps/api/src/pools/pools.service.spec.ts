@@ -184,3 +184,32 @@ describe('PoolsService.recordSessionForSwimmer', () => {
     expect(prisma.swimSession.create).not.toHaveBeenCalled();
   });
 });
+
+describe('PoolsService.generateClaimLink', () => {
+  it('校验本池登记后写入随机令牌+7天过期，返回 claimUrl', async () => {
+    const prisma: any = {
+      pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
+      registration: { findUnique: jest.fn().mockResolvedValue({ id: 'r1' }) },
+      user: { update: jest.fn().mockResolvedValue({}) },
+    };
+    const svc = new PoolsService(prisma);
+    const res = await svc.generateClaimLink('o1', 'p1', 's1');
+    const upd = prisma.user.update.mock.calls[0][0];
+    expect(upd.where).toEqual({ id: 's1' });
+    expect(typeof upd.data.claimToken).toBe('string');
+    expect(upd.data.claimToken.length).toBeGreaterThanOrEqual(32);
+    expect(upd.data.claimTokenExpiresAt).toBeInstanceOf(Date);
+    expect(res.claimToken).toBe(upd.data.claimToken);
+    expect(res.claimUrl).toContain(`/claim/${res.claimToken}`);
+  });
+
+  it('游泳者未登记本池 → NotFoundException', async () => {
+    const prisma: any = {
+      pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
+      registration: { findUnique: jest.fn().mockResolvedValue(null) },
+      user: { update: jest.fn() },
+    };
+    const svc = new PoolsService(prisma);
+    await expect(svc.generateClaimLink('o1', 'p1', 'ghost')).rejects.toBeInstanceOf(NotFoundException);
+  });
+});

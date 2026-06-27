@@ -2,7 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { Prisma } from '@prisma/client';
 import { IsDateString, IsEmail, IsEnum, IsInt, IsLatitude, IsLongitude, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { PrismaService } from '../prisma.service';
-import { CreateSessionDto, PoolDetail, PoolSummary, SwimmerListItem } from '@swim/shared';
+import { ClaimLinkResponse, CreateSessionDto, PoolDetail, PoolSummary, SwimmerListItem } from '@swim/shared';
 import { assertOwnsPool } from '../common/ownership';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
@@ -187,5 +187,19 @@ export class PoolsService {
         swamAt: new Date(dto.swamAt),
       },
     });
+  }
+
+  /** Owner generates a one-time claim link for a swimmer registered in their pool. */
+  async generateClaimLink(ownerId: string, poolId: string, swimmerId: string): Promise<ClaimLinkResponse> {
+    await assertOwnsPool(this.prisma, ownerId, poolId);
+    const reg = await this.prisma.registration.findUnique({
+      where: { swimmerId_poolId: { swimmerId, poolId } },
+    });
+    if (!reg) throw new NotFoundException('该游泳者未登记在本泳池');
+    const claimToken = randomBytes(32).toString('hex');
+    const claimTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await this.prisma.user.update({ where: { id: swimmerId }, data: { claimToken, claimTokenExpiresAt } });
+    const base = process.env.SWIMMER_APP_URL ?? 'http://localhost:5174';
+    return { claimToken, claimUrl: `${base}/claim/${claimToken}`, expiresAt: claimTokenExpiresAt.toISOString() };
   }
 }
