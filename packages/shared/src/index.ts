@@ -56,6 +56,12 @@ export interface ChallengeSummary {
 export interface LeaderboardRow { swimmerId: string; name: string | null; email: string; distanceMeters: number; }
 export interface ChallengeDetail extends ChallengeSummary { leaderboard: LeaderboardRow[]; }
 export interface ActiveChallengeItem extends ChallengeSummary { poolName: string; }
+
+// nearby pools (PostGIS radius search) — swimmer "find nearby pools" discovery
+export interface NearbyPlace {
+  id: string; name: string; address: string | null;
+  latitude: number; longitude: number; distanceMeters: number;
+}
 export interface MyChallengeItem {
   id: string; poolId: string; poolName: string; name: string;
   goalDistanceMeters: number; totalDistanceMeters: number;

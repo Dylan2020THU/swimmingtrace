@@ -1,14 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-
-export interface NearbyPlace {
-  id: string;
-  name: string;
-  address: string | null;
-  latitude: number;
-  longitude: number;
-  distanceMeters: number;
-}
+import { NearbyPlace } from '@swim/shared';
 
 @Injectable()
 export class PlacesService {
