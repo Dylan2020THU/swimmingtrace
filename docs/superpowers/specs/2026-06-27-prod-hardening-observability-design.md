@@ -13,13 +13,13 @@
 1. 安全基线：`helmet` 安全响应头 + `compression`。
 2. 统一错误契约：全局异常过滤器 → 标准 JSON 错误信封（含 `requestId`），类型导出到 `@swim/shared`，两端前端复用。
 3. 可观测：`nestjs-pino` 结构化日志 + 每请求 `x-request-id` 关联；`/health`（存活）、`/health/ready`（就绪，探库）。
-4. 配置硬化：`@nestjs/config` + Joi 启动期 schema 校验，集中并取代散落的 `process.env.X ?? …` 读取与手写 JWT 校验。
+4. 配置硬化：扩展既有 `validateEnv`（项目既定的手写校验模式）覆盖全部环境变量并回填默认值，启动期 fail-fast；集中取代散落的 `process.env.X ?? …` 读取。
 5. 生命周期：`enableShutdownHooks()` + Prisma 优雅断连。
 6. 容器化：`apps/api` 多阶段 `Dockerfile` + 根 `docker-compose.prod.yml`（api + postgis）。
 
 ## 范围与非目标
 
-**范围**：仅 `apps/api`（含 `@swim/shared` 加一个类型、两端前端各一处错误读取微调）、新增 Docker 资产、`.env.example` 增项、README/CI 文档化。
+**范围**：仅 `apps/api`（含 `@swim/shared` 加一个错误信封类型）、新增 Docker 资产、`.env.example` 增项、README/CI 文档化。前端无需改动（信封向后兼容，见 §2）。
 
 **非目标（明确不做，留给后续子项目）**
 
@@ -63,9 +63,9 @@ apps/api/src/
 
 ## 组件设计
 
-### 1. 配置校验（`@nestjs/config` + Joi）
+### 1. 配置校验（扩展既有 `validateEnv`）
 
-`AppModule` 装配 `ConfigModule.forRoot({ isGlobal: true, validationSchema, validationOptions: { abortEarly: false } })`。Joi schema：
+项目已装配 `ConfigModule.forRoot({ isGlobal: true, validate: validateEnv })`，`common/env.validation.ts` 已校验 `JWT_SECRET`/`DATABASE_URL`。**沿用该手写模式**（不引入 Joi，避免替换已测通过的代码），把 `validateEnv` 扩展为覆盖下列全部变量、非法即抛错、并对可选项回填默认值（其返回对象即 `ConfigService` 的数据源）：
 
 | 变量 | 规则 |
 |---|---|
@@ -79,7 +79,7 @@ apps/api/src/
 | `APP_TIMEZONE` | string，默认 `UTC` |
 | `LOG_LEVEL` | `fatal\|error\|warn\|info\|debug\|trace`，默认 `info` |
 
-校验失败 → 启动即抛错退出（fail-fast）。落地后把现有 `main.ts` 的 `process.env.PORT/CORS_ORIGIN`、`auth` 模块手写的 JWT_SECRET 校验、`stats` 的 `APP_TIMEZONE` 读取统一改走 `ConfigService`；JWT 强校验语义由 Joi `min(16)` + 占位禁用承接（行为等价，集中化）。
+校验失败 → 启动即抛错退出（fail-fast）。`auth`/`jwt.strategy` 已走 `ConfigService`；本子项目再把 `main.ts` 的 `process.env.PORT/CORS_ORIGIN`、`stats.service` 的 `process.env.APP_TIMEZONE` 改走 `ConfigService`，消除服务层直读 `process.env`。JWT 占位/长度强校验语义保持不变（仍由 `validateEnv` 承接）。
 
 ### 2. 错误契约（统一信封 + 全局过滤器）
 
@@ -103,7 +103,7 @@ export interface ApiErrorResponse {
 - 统一补 `requestId`（从请求上下文取，见 §3）、`timestamp`、`path`。
 - 日志：4xx 记 `warn`，5xx 记 `error`（含完整 stack + requestId），经 pino logger，不走 `console`。
 
-前端：两端 axios 拦截器已集中处理错误，调整为统一读 `error.response.data.message`（数组则取首条或 join），并在 dev 下把 `requestId` 带入错误提示，便于对账。改动小且向后兼容（Nest 默认错误体本就含 `message`，本设计只**增加**字段不删减）。
+前端：信封是 Nest 默认错误体 `{statusCode,message,error}` 的**超集**（只增 `requestId`/`timestamp`/`path`，不删 `message`），两端 axios 拦截器现仅处理 401、调用点读 `message` 不受影响，故**前端无需改动**（YAGNI）。dev 下的 `requestId` 透出留待 #5 可观测子项目按需补。
 
 ### 3. 结构化日志与请求关联（`nestjs-pino`）
 
@@ -173,7 +173,7 @@ export interface ApiErrorResponse {
 | 全局过滤器改变错误响应体 → 可能打破断言旧形状的 e2e | `message` 字段保留，仅新增字段；实现期跑全量 e2e 逐个修正 |
 | `bufferLogs` + 自定义 logger 装配顺序不当致早期日志丢失 | 按 nestjs-pino 文档 `bufferLogs:true` + `app.useLogger` 标准装配并验证 |
 | Docker 多阶段在 monorepo 下 `@swim/shared` 解析 | 构建上下文取仓库根、复用既有 workspace 构建链（`@swim/shared` 已是 built 包）|
-| Joi 占位串黑名单误伤合法密钥 | 仅禁明显占位（`changeme`/`your-secret`/`secret`），并要求 `min(16)` |
+| 占位串黑名单误伤合法密钥 | 沿用既有 `WEAK_JWT_SECRET='change-me-in-prod'` 精确匹配 + `min(16)`，不做模糊黑名单 |
 
 ## 验收标准
 
