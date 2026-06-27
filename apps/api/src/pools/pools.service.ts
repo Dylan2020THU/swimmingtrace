@@ -1,4 +1,5 @@
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { IsDateString, IsEmail, IsEnum, IsInt, IsLatitude, IsLongitude, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { PrismaService } from '../prisma.service';
@@ -42,7 +43,10 @@ export class RecordSessionDto implements CreateSessionDto {
 
 @Injectable()
 export class PoolsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private config: ConfigService,
+  ) {}
 
   async listMyPools(ownerId: string, includeArchived = false): Promise<PoolSummary[]> {
     const pools = await this.prisma.pool.findMany({
@@ -209,7 +213,7 @@ export class PoolsService {
     const claimToken = randomBytes(32).toString('hex');
     const claimTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     await this.prisma.user.update({ where: { id: swimmerId }, data: { claimToken, claimTokenExpiresAt } });
-    const base = process.env.SWIMMER_APP_URL ?? 'http://localhost:5174';
+    const base = this.config.get<string>('SWIMMER_APP_URL') ?? 'http://localhost:5174';
     return { claimToken, claimUrl: `${base}/claim/${claimToken}`, expiresAt: claimTokenExpiresAt.toISOString() };
   }
 }
