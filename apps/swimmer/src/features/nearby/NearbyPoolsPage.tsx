@@ -52,6 +52,11 @@ export function NearbyPoolsPage() {
           <DotLoading /> 定位中…
         </div>
       )}
+      {coords && nearby.isLoading && (
+        <div style={{ textAlign: 'center', padding: 16 }}>
+          <DotLoading /> 搜索中…
+        </div>
+      )}
       {coords && nearby.isError && <ErrorBlock status="default" title="加载失败" description="请稍后重试" />}
       {coords && nearby.isSuccess && data.length === 0 && (
         <ErrorBlock status="empty" title="附近 5 公里内没有找到泳池" />
