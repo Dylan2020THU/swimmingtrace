@@ -10,6 +10,7 @@ import { SessionsModule } from './sessions/sessions.module';
 import { StatsModule } from './stats/stats.module';
 import { PlacesModule } from './places/places.module';
 import { MeModule } from './me/me.module';
+import { ChallengesModule } from './challenges/challenges.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { MeModule } from './me/me.module';
     StatsModule,
     PlacesModule,
     MeModule,
+    ChallengesModule,
   ],
   providers: [
     PrismaService,

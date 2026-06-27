@@ -14,3 +14,10 @@ export async function assertOwnsSwimmer(prisma: PrismaService, ownerId: string, 
   });
   if (!reg) throw new ForbiddenException();
 }
+
+export async function assertOwnsChallenge(prisma: PrismaService, ownerId: string, challengeId: string) {
+  const challenge = await prisma.challenge.findUnique({ where: { id: challengeId }, include: { pool: true } });
+  if (!challenge) throw new NotFoundException('Challenge not found');
+  if (challenge.pool.ownerId !== ownerId) throw new ForbiddenException();
+  return challenge;
+}
