@@ -14,6 +14,7 @@ describe('Owner flows (e2e)', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
     prisma = app.get(PrismaService);
+    await prisma.challenge.deleteMany();
     await prisma.swimSession.deleteMany();
     await prisma.registration.deleteMany();
     await prisma.pool.deleteMany();
