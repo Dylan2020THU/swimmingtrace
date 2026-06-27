@@ -55,6 +55,7 @@ export interface ChallengeSummary {
 }
 export interface LeaderboardRow { swimmerId: string; name: string | null; email: string; distanceMeters: number; }
 export interface ChallengeDetail extends ChallengeSummary { leaderboard: LeaderboardRow[]; }
+export interface ActiveChallengeItem extends ChallengeSummary { poolName: string; }
 export interface MyChallengeItem {
   id: string; poolId: string; poolName: string; name: string;
   goalDistanceMeters: number; totalDistanceMeters: number;
