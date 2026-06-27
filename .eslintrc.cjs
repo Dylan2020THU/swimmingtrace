@@ -25,7 +25,7 @@ module.exports = {
   },
   overrides: [
     {
-      files: ['apps/web/**/*.{ts,tsx}'],
+      files: ['apps/web/**/*.{ts,tsx}', 'apps/swimmer/**/*.{ts,tsx}'],
       env: { browser: true },
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
