@@ -29,8 +29,8 @@ export interface SwimmerListItem {
 }
 export interface UpdateMembershipDto { status: RegistrationStatus; }
 
-// 代录
-export interface CreateSessionDto { distanceMeters: number; durationSeconds?: number; swamAt: string; }
+// session recording — owner 代录 (poolId via URL) or swimmer self-record (poolId in body)
+export interface CreateSessionDto { distanceMeters: number; durationSeconds?: number; swamAt: string; poolId?: string; }
 
 // claim — owner generates a one-time claim link; swimmer claims to set a password.
 export interface ClaimLinkResponse { claimToken: string; claimUrl: string; expiresAt: string; }
