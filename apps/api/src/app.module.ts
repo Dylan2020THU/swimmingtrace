@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { PrismaService } from './prisma.service';
 import { validateEnv } from './common/env.validation';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { AuthModule } from './auth/auth.module';
 import { PoolsModule } from './pools/pools.module';
 import { SessionsModule } from './sessions/sessions.module';
@@ -28,6 +29,7 @@ import { ChallengesModule } from './challenges/challenges.module';
   providers: [
     PrismaService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],
   exports: [PrismaService],
 })

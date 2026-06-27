@@ -83,3 +83,13 @@ export interface SwimmerStats {
   summary: { totalDistanceMeters: number; totalDurationSeconds: number; sessionCount: number };
   heatmap: HeatmapCell[];
 }
+
+// platform — uniform error envelope returned by the global exception filter for ALL errors
+export interface ApiErrorResponse {
+  statusCode: number;
+  error: string;
+  message: string | string[];
+  requestId: string;
+  timestamp: string;
+  path: string;
+}
