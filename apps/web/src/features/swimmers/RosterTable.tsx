@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Button, Card, Table, Tag, App } from 'antd';
+import { Button, Card, Space, Table, Tag, App } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import type { SwimmerListItem } from '@swim/shared';
 import { useSwimmers, useSetMembership } from '../../lib/queries';
 import { CreateSwimmerModal } from './CreateSwimmerModal';
+import { ClaimLinkButton } from './ClaimLinkButton';
 
 export function RosterTable({ poolId }: { poolId: string }) {
   const swimmers = useSwimmers(poolId);
@@ -26,9 +27,12 @@ export function RosterTable({ poolId }: { poolId: string }) {
     {
       title: '操作', key: 'op',
       render: (_: unknown, r: SwimmerListItem) => (
-        <Button size="small" onClick={(e) => { e.stopPropagation(); toggle(r); }}>
-          {r.status === 'ACTIVE' ? '停用' : '恢复'}
-        </Button>
+        <Space>
+          <Button size="small" onClick={(e) => { e.stopPropagation(); toggle(r); }}>
+            {r.status === 'ACTIVE' ? '停用' : '恢复'}
+          </Button>
+          <ClaimLinkButton poolId={poolId} sid={r.swimmerId} claimed={!!r.claimedAt} />
+        </Space>
       ),
     },
   ];

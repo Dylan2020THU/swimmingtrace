@@ -56,6 +56,9 @@ export function useSetMembership(poolId: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.swimmers(poolId) }),
   });
 }
+export function useGenerateClaimLink(poolId: string, sid: string) {
+  return useMutation({ mutationFn: () => ep.generateClaimLink(poolId, sid) });
+}
 export function useRecordSession(poolId: string, sid: string) {
   const qc = useQueryClient();
   return useMutation({

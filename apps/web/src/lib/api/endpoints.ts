@@ -2,7 +2,7 @@ import { api } from './client';
 import type {
   LoginResponse, MeResponse, CreatePoolDto, UpdatePoolDto, PoolSummary, PoolDetail,
   CreateSwimmerDto, SwimmerListItem, UpdateMembershipDto, CreateSessionDto,
-  OverviewStats, PoolStats, SwimmerStats,
+  OverviewStats, PoolStats, SwimmerStats, ClaimLinkResponse,
 } from '@swim/shared';
 
 export const login = (b: { email: string; password: string }) =>
@@ -26,6 +26,8 @@ export const setMembership = (poolId: string, sid: string, b: UpdateMembershipDt
   api.patch(`/pools/${poolId}/swimmers/${sid}`, b).then((r) => r.data);
 export const recordSession = (poolId: string, sid: string, b: CreateSessionDto) =>
   api.post(`/pools/${poolId}/swimmers/${sid}/sessions`, b).then((r) => r.data);
+export const generateClaimLink = (poolId: string, sid: string) =>
+  api.post<ClaimLinkResponse>(`/pools/${poolId}/swimmers/${sid}/claim-link`).then((r) => r.data);
 
 export const getOverview = () => api.get<OverviewStats>('/stats/overview').then((r) => r.data);
 export const getPoolStats = (id: string) => api.get<PoolStats>(`/stats/pool/${id}`).then((r) => r.data);
