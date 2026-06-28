@@ -1,7 +1,8 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { AuthService, ClaimDto, ForgotPasswordDto, LoginDto, RefreshDto, RegisterDto, ResetPasswordDto } from './auth.service';
+import { AuthService, ClaimDto, ForgotPasswordDto, LoginDto, RefreshDto, RegisterDto, ResetPasswordDto, VerifyEmailDto } from './auth.service';
 import { PasswordResetService } from './password-reset.service';
+import { EmailVerificationService } from './email-verification.service';
 import { CurrentUser, JwtAuthGuard } from '../common/auth.common';
 
 @Controller('auth')
@@ -9,6 +10,7 @@ export class AuthController {
   constructor(
     private auth: AuthService,
     private passwordReset: PasswordResetService,
+    private emailVerification: EmailVerificationService,
   ) {}
 
   // Tighter limit on credential endpoints to blunt brute-force / stuffing.
@@ -67,6 +69,21 @@ export class AuthController {
   @Post('reset-password')
   async resetPassword(@Body() dto: ResetPasswordDto) {
     await this.passwordReset.reset(dto.token, dto.password);
+    return { ok: true };
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('verify-email')
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    await this.emailVerification.verify(dto.token);
+    return { ok: true };
+  }
+
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('resend-verification')
+  @UseGuards(JwtAuthGuard)
+  async resendVerification(@CurrentUser() user: { id: string }) {
+    await this.emailVerification.resend(user.id);
     return { ok: true };
   }
 

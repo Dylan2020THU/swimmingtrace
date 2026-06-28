@@ -39,6 +39,10 @@ export class ResetPasswordDto {
   @IsString() @MinLength(8) password: string;
 }
 
+export class VerifyEmailDto {
+  @IsString() token: string;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
