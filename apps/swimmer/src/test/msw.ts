@@ -12,6 +12,8 @@ export const handlers = [
     HttpResponse.json({ totalDistanceMeters: 0, totalDurationSeconds: 0, sessionCount: 0 }),
   ),
   http.get('/api/stats/heatmap', () => HttpResponse.json([])),
+  http.post('/api/auth/forgot-password', () => HttpResponse.json({ ok: true })),
+  http.post('/api/auth/reset-password', () => HttpResponse.json({ ok: true })),
 ];
 
 export const server = setupServer(...handlers);

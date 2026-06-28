@@ -42,6 +42,9 @@ export function LoginPage() {
           <Input type="password" placeholder="密码（≥8）" clearable />
         </Form.Item>
       </Form>
+      <div style={{ padding: '8px 16px', textAlign: 'right' }}>
+        <a onClick={() => navigate('/forgot-password')}>忘记密码？</a>
+      </div>
     </div>
   );
 }
