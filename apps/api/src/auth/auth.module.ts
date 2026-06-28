@@ -7,6 +7,7 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { RefreshTokenService } from './refresh-token.service';
 import { PasswordResetService } from './password-reset.service';
+import { EmailVerificationService } from './email-verification.service';
 import { MailModule } from '../mail/mail.module';
 import { PrismaService } from '../prisma.service';
 
@@ -24,6 +25,6 @@ import { PrismaService } from '../prisma.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RefreshTokenService, PasswordResetService, PrismaService],
+  providers: [AuthService, JwtStrategy, RefreshTokenService, PasswordResetService, EmailVerificationService, PrismaService],
 })
 export class AuthModule {}

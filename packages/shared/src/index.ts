@@ -3,7 +3,7 @@ export type RegistrationStatus = 'ACTIVE' | 'INACTIVE';
 
 // auth
 export interface LoginResponse { accessToken: string; refreshToken: string; }
-export interface MeResponse { id: string; email: string; role: Role; }
+export interface MeResponse { id: string; email: string; role: Role; emailVerifiedAt: string | null; }
 
 // pools
 export interface CreatePoolDto { name: string; address?: string; latitude?: number; longitude?: number; }

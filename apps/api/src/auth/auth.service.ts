@@ -5,6 +5,7 @@ import { Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma.service';
 import { RefreshTokenService } from './refresh-token.service';
+import { EmailVerificationService } from './email-verification.service';
 import { ClaimAccountDto, ClaimInfoResponse, LoginResponse } from '@swim/shared';
 
 export class RegisterDto {
@@ -44,6 +45,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwt: JwtService,
     private refreshTokens: RefreshTokenService,
+    private emailVerification: EmailVerificationService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -58,6 +60,7 @@ export class AuthService {
     const user = await this.prisma.user.create({
       data: { email: dto.email, passwordHash, name: dto.name, role, claimedAt: new Date() },
     });
+    await this.emailVerification.sendVerification(user.id, user.email, user.role);
     return this.issueSession(user);
   }
 
@@ -91,7 +94,7 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, 12);
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash, claimedAt: new Date(), claimToken: null, claimTokenExpiresAt: null },
+      data: { passwordHash, claimedAt: new Date(), emailVerifiedAt: new Date(), claimToken: null, claimTokenExpiresAt: null },
     });
     return this.issueSession(user);
   }
