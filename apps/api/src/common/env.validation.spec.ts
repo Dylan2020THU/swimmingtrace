@@ -55,4 +55,15 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...ok, REFRESH_TOKEN_TTL: '30days' })).toThrow(/REFRESH_TOKEN_TTL/);
     expect(() => validateEnv({ ...ok, JWT_EXPIRES_IN: 'abc' })).toThrow(/JWT_EXPIRES_IN/);
   });
+
+  it('回填 MAIL_FROM 与 PASSWORD_RESET_TTL 默认', () => {
+    const out = validateEnv({ ...ok });
+    expect(out.MAIL_FROM).toBe('no-reply@swimmingtrace.local');
+    expect(out.PASSWORD_RESET_TTL).toBe('1h');
+  });
+
+  it('非法 PASSWORD_RESET_TTL / SMTP_PORT 抛错', () => {
+    expect(() => validateEnv({ ...ok, PASSWORD_RESET_TTL: '1hour' })).toThrow(/PASSWORD_RESET_TTL/);
+    expect(() => validateEnv({ ...ok, SMTP_PORT: 'abc' })).toThrow(/SMTP_PORT/);
+  });
 });

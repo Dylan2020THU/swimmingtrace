@@ -50,6 +50,15 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
     throw new Error(`REFRESH_TOKEN_TTL must be a duration like 30d; got "${refreshTtl}".`);
   }
 
+  const mailFrom = (config.MAIL_FROM as string) ?? 'no-reply@swimmingtrace.local';
+  const resetTtl = (config.PASSWORD_RESET_TTL as string) ?? '1h';
+  if (!DURATION_RE.test(resetTtl)) {
+    throw new Error(`PASSWORD_RESET_TTL must be a duration like 1h; got "${resetTtl}".`);
+  }
+  if (config.SMTP_PORT !== undefined && !/^\d+$/.test(String(config.SMTP_PORT))) {
+    throw new Error(`SMTP_PORT must be a number; got "${config.SMTP_PORT}".`);
+  }
+
   return {
     ...config,
     NODE_ENV: nodeEnv,
@@ -60,5 +69,7 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
     APP_TIMEZONE: (config.APP_TIMEZONE as string) ?? 'UTC',
     JWT_EXPIRES_IN: jwtExpiresIn,
     REFRESH_TOKEN_TTL: refreshTtl,
+    MAIL_FROM: mailFrom,
+    PASSWORD_RESET_TTL: resetTtl,
   };
 }
