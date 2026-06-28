@@ -44,6 +44,7 @@ export function ClaimLinkButton({ poolId, sid, claimed }: { poolId: string; sid:
             把链接发给游泳者，TA 打开后设密码即可登录。
             {gen.data ? `（${dayjs(gen.data.expiresAt).format('YYYY-MM-DD')} 前有效）` : ''}
           </Typography.Text>
+          <Typography.Text type="success">已发送邮件至该游泳者邮箱。</Typography.Text>
           <Space.Compact style={{ width: '100%' }}>
             <Input readOnly value={gen.data?.claimUrl} />
             <Button type="primary" autoInsertSpace={false} onClick={copy}>
