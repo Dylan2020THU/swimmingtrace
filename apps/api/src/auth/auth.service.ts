@@ -25,6 +25,10 @@ export class ClaimDto implements ClaimAccountDto {
   @IsString() @MinLength(8) password: string;
 }
 
+export class RefreshDto {
+  @IsString() refreshToken: string;
+}
+
 @Injectable()
 export class AuthService {
   constructor(

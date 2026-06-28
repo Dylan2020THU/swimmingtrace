@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { AuthService, ClaimDto, LoginDto, RegisterDto } from './auth.service';
+import { AuthService, ClaimDto, LoginDto, RefreshDto, RegisterDto } from './auth.service';
 import { CurrentUser, JwtAuthGuard } from '../common/auth.common';
 
 @Controller('auth')
@@ -30,6 +30,26 @@ export class AuthController {
   @Post('claim')
   claim(@Body() dto: ClaimDto) {
     return this.auth.claim(dto);
+  }
+
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @Post('refresh')
+  refresh(@Body() dto: RefreshDto) {
+    return this.auth.refresh(dto.refreshToken);
+  }
+
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @Post('logout')
+  async logout(@Body() dto: RefreshDto) {
+    await this.auth.logout(dto.refreshToken);
+    return { ok: true };
+  }
+
+  @Post('logout-all')
+  @UseGuards(JwtAuthGuard)
+  async logoutAll(@CurrentUser() user: { id: string }) {
+    await this.auth.logoutAll(user.id);
+    return { ok: true };
   }
 
   @Get('me')
