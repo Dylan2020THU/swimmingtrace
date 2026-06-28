@@ -45,6 +45,9 @@ export function LoginPage() {
           <Form.Item name="password" label="密码" rules={[{ required: true, min: 8, message: '至少 8 位' }]}>
             <Input.Password autoComplete="current-password" />
           </Form.Item>
+          <div style={{ textAlign: 'right', marginBottom: 8 }}>
+            <a onClick={() => navigate('/forgot-password')}>忘记密码？</a>
+          </div>
           <Button type="primary" htmlType="submit" block loading={loading} autoInsertSpace={false}>
             {mode === 'login' ? '登录' : '注册'}
           </Button>

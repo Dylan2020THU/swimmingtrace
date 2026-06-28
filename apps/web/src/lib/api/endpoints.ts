@@ -13,6 +13,10 @@ export const register = (b: { email: string; password: string; name?: string; ro
 export const getMe = () => api.get<MeResponse>('/auth/me').then((r) => r.data);
 export const logout = (refreshToken: string) =>
   api.post('/auth/logout', { refreshToken }).then((r) => r.data);
+export const forgotPassword = (email: string) =>
+  api.post('/auth/forgot-password', { email }).then((r) => r.data);
+export const resetPassword = (token: string, password: string) =>
+  api.post('/auth/reset-password', { token, password }).then((r) => r.data);
 
 export const listPools = (includeArchived = false) =>
   api.get<PoolSummary[]>('/pools', { params: includeArchived ? { includeArchived: 'true' } : {} }).then((r) => r.data);
