@@ -38,6 +38,8 @@ model User {
   claimedAt     DateTime?
   claimToken          String?   @unique
   claimTokenExpiresAt DateTime?
+  passwordResetTokenHash String?
+  passwordResetExpiresAt DateTime?
 }
 
 model Pool {
