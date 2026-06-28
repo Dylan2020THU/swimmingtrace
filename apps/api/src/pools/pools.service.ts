@@ -1,8 +1,9 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { IsDateString, IsEmail, IsEnum, IsInt, IsLatitude, IsLongitude, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { PrismaService } from '../prisma.service';
+import { MailService } from '../mail/mail.service';
 import { ClaimLinkResponse, CreateSessionDto, PoolDetail, PoolSummary, SwimmerListItem } from '@swim/shared';
 import { assertOwnsPool } from '../common/ownership';
 import { randomBytes } from 'crypto';
@@ -43,9 +44,12 @@ export class RecordSessionDto implements CreateSessionDto {
 
 @Injectable()
 export class PoolsService {
+  private readonly logger = new Logger(PoolsService.name);
+
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private mail: MailService,
   ) {}
 
   async listMyPools(ownerId: string, includeArchived = false): Promise<PoolSummary[]> {
@@ -214,6 +218,10 @@ export class PoolsService {
     const claimTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     await this.prisma.user.update({ where: { id: swimmerId }, data: { claimToken, claimTokenExpiresAt } });
     const base = this.config.get<string>('SWIMMER_APP_URL') ?? 'http://localhost:5174';
-    return { claimToken, claimUrl: `${base}/claim/${claimToken}`, expiresAt: claimTokenExpiresAt.toISOString() };
+    const claimUrl = `${base}/claim/${claimToken}`;
+    await this.mail
+      .sendClaimLink(target.email, claimUrl)
+      .catch((e) => this.logger.warn(`认领链接邮件发送失败：${(e as Error).message}`));
+    return { claimToken, claimUrl, expiresAt: claimTokenExpiresAt.toISOString() };
   }
 }

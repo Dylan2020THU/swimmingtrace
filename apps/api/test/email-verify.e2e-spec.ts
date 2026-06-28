@@ -19,6 +19,7 @@ describe('Email verification (e2e)', () => {
           return Promise.resolve();
         },
         sendPasswordReset: () => Promise.resolve(),
+        sendClaimLink: () => Promise.resolve(),
       })
       .compile();
     app = mod.createNestApplication();
