@@ -40,6 +40,9 @@ model User {
   claimTokenExpiresAt DateTime?
   passwordResetTokenHash String?
   passwordResetExpiresAt DateTime?
+  emailVerifiedAt      DateTime?
+  emailVerifyTokenHash String?
+  emailVerifyExpiresAt DateTime?
 }
 
 model Pool {
