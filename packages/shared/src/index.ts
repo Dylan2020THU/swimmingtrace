@@ -2,7 +2,7 @@ export type Role = 'ADMIN' | 'OWNER' | 'SWIMMER';
 export type RegistrationStatus = 'ACTIVE' | 'INACTIVE';
 
 // auth
-export interface LoginResponse { accessToken: string; }
+export interface LoginResponse { accessToken: string; refreshToken: string; }
 export interface MeResponse { id: string; email: string; role: Role; }
 
 // pools

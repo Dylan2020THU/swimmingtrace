@@ -4,6 +4,7 @@ import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validato
 import { Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma.service';
+import { RefreshTokenService } from './refresh-token.service';
 import { ClaimAccountDto, ClaimInfoResponse, LoginResponse } from '@swim/shared';
 
 export class RegisterDto {
@@ -29,6 +30,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwt: JwtService,
+    private refreshTokens: RefreshTokenService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -43,7 +45,7 @@ export class AuthService {
     const user = await this.prisma.user.create({
       data: { email: dto.email, passwordHash, name: dto.name, role, claimedAt: new Date() },
     });
-    return this.sign(user.id, user.email, user.role);
+    return this.issueSession(user);
   }
 
   async login(dto: LoginDto) {
@@ -51,7 +53,7 @@ export class AuthService {
     if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    return this.sign(user.id, user.email, user.role);
+    return this.issueSession(user);
   }
 
   private async findClaimable(token: string) {
@@ -78,11 +80,29 @@ export class AuthService {
       where: { id: user.id },
       data: { passwordHash, claimedAt: new Date(), claimToken: null, claimTokenExpiresAt: null },
     });
-    return this.sign(user.id, user.email, user.role);
+    return this.issueSession(user);
   }
 
-  private sign(sub: string, email: string, role: Role) {
-    // TODO (Phase 2): add refresh tokens + rotation.
-    return { accessToken: this.jwt.sign({ sub, email, role }) };
+  private async issueSession(user: { id: string; email: string; role: Role }): Promise<LoginResponse> {
+    const accessToken = this.jwt.sign({ sub: user.id, email: user.email, role: user.role });
+    const refreshToken = await this.refreshTokens.issue(user.id);
+    return { accessToken, refreshToken };
+  }
+
+  /** Rotate a refresh token → new access + new refresh (reuse ⇒ family revoked). */
+  async refresh(presented: string): Promise<LoginResponse> {
+    const { token, userId } = await this.refreshTokens.rotate(presented);
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('用户不存在');
+    const accessToken = this.jwt.sign({ sub: user.id, email: user.email, role: user.role });
+    return { accessToken, refreshToken: token };
+  }
+
+  async logout(presented: string): Promise<void> {
+    await this.refreshTokens.revoke(presented);
+  }
+
+  async logoutAll(userId: string): Promise<void> {
+    await this.refreshTokens.revokeAllForUser(userId);
   }
 }
