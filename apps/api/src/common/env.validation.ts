@@ -58,9 +58,14 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
   if (config.SMTP_PORT !== undefined && !/^\d+$/.test(String(config.SMTP_PORT))) {
     throw new Error(`SMTP_PORT must be a number; got "${config.SMTP_PORT}".`);
   }
+  const verifyTtl = (config.EMAIL_VERIFY_TTL as string) ?? '24h';
+  if (!DURATION_RE.test(verifyTtl)) {
+    throw new Error(`EMAIL_VERIFY_TTL must be a duration like 24h; got "${verifyTtl}".`);
+  }
 
   return {
     ...config,
+    EMAIL_VERIFY_TTL: verifyTtl,
     NODE_ENV: nodeEnv,
     LOG_LEVEL: logLevel,
     PORT: port,

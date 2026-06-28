@@ -66,4 +66,9 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...ok, PASSWORD_RESET_TTL: '1hour' })).toThrow(/PASSWORD_RESET_TTL/);
     expect(() => validateEnv({ ...ok, SMTP_PORT: 'abc' })).toThrow(/SMTP_PORT/);
   });
+
+  it('回填 EMAIL_VERIFY_TTL 默认 24h；非法抛错', () => {
+    expect(validateEnv({ ...ok }).EMAIL_VERIFY_TTL).toBe('24h');
+    expect(() => validateEnv({ ...ok, EMAIL_VERIFY_TTL: '24hours' })).toThrow(/EMAIL_VERIFY_TTL/);
+  });
 });
