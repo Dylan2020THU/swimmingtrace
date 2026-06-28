@@ -8,7 +8,9 @@ import { renderWithProviders } from '../test/render';
 import { AppLayout } from './AppLayout';
 import { useAuthStore } from '../lib/auth-store';
 
-beforeEach(() => useAuthStore.getState().setAuth('tok', { id: 'o1', email: 'owner@x.com', role: 'OWNER' }));
+beforeEach(() =>
+  useAuthStore.getState().setAuth('tok', { id: 'o1', email: 'owner@x.com', role: 'OWNER', emailVerifiedAt: '2026-01-01T00:00:00.000Z' }),
+);
 
 it('渲染用户邮箱，登出后跳登录', async () => {
   server.use(http.get('/api/pools', () => HttpResponse.json([])));
@@ -41,4 +43,16 @@ it('有进行中挑战 → 顶栏显示「赛事进行中」徽标', async () =>
     { route: '/pools' },
   );
   expect(await screen.findByText('赛事进行中')).toBeInTheDocument();
+});
+
+it('未验证邮箱时显示横幅', () => {
+  useAuthStore.getState().setAuth('tok', { id: 'o1', email: 'owner@x.com', role: 'OWNER', emailVerifiedAt: null });
+  server.use(http.get('/api/pools', () => HttpResponse.json([])));
+  renderWithProviders(
+    <Routes>
+      <Route element={<AppLayout />}><Route path="/pools" element={<div>内容</div>} /></Route>
+    </Routes>,
+    { route: '/pools' },
+  );
+  expect(screen.getByText(/请验证你的邮箱/)).toBeInTheDocument();
 });

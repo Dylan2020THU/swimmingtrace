@@ -11,6 +11,8 @@ export const handlers = [
     HttpResponse.json({ poolCount: 0, memberCount: 0, activeMemberCount: 0, mileageThisMonthMeters: 0, sessionsThisMonth: 0 })),
   http.post('/api/auth/forgot-password', () => HttpResponse.json({ ok: true })),
   http.post('/api/auth/reset-password', () => HttpResponse.json({ ok: true })),
+  http.post('/api/auth/verify-email', () => HttpResponse.json({ ok: true })),
+  http.post('/api/auth/resend-verification', () => HttpResponse.json({ ok: true })),
 ];
 
 export const server = setupServer(...handlers);

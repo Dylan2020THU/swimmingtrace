@@ -17,6 +17,10 @@ export const forgotPassword = (email: string) =>
   api.post('/auth/forgot-password', { email }).then((r) => r.data);
 export const resetPassword = (token: string, password: string) =>
   api.post('/auth/reset-password', { token, password }).then((r) => r.data);
+export const verifyEmail = (token: string) =>
+  api.post('/auth/verify-email', { token }).then((r) => r.data);
+export const resendVerification = () =>
+  api.post('/auth/resend-verification').then((r) => r.data);
 
 export const listPools = (includeArchived = false) =>
   api.get<PoolSummary[]>('/pools', { params: includeArchived ? { includeArchived: 'true' } : {} }).then((r) => r.data);

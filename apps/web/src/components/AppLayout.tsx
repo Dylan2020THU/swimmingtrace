@@ -1,8 +1,8 @@
-import { Layout, Menu, Select, Button, Space, Tag, Typography } from 'antd';
+import { Layout, Menu, Select, Button, Space, Tag, Typography, Alert, App } from 'antd';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { usePools, useActiveChallenges } from '../lib/queries';
 import { useAuthStore } from '../lib/auth-store';
-import { logout as apiLogout } from '../lib/api/endpoints';
+import { logout as apiLogout, resendVerification } from '../lib/api/endpoints';
 
 export function AppLayout() {
   const navigate = useNavigate();
@@ -11,6 +11,7 @@ export function AppLayout() {
   const active = useActiveChallenges();
   const user = useAuthStore((s) => s.user);
   const clear = useAuthStore((s) => s.clear);
+  const { message } = App.useApp();
 
   const logout = async () => {
     const rt = useAuthStore.getState().refreshToken;
@@ -36,6 +37,23 @@ export function AppLayout() {
           <Button onClick={logout} autoInsertSpace={false}>登出</Button>
         </Space>
       </Layout.Header>
+      {user && user.emailVerifiedAt == null && (
+        <Alert
+          type="warning"
+          banner
+          message="请验证你的邮箱以保障账号安全。"
+          action={
+            <a
+              onClick={async () => {
+                await resendVerification().catch(() => {});
+                message.success('验证邮件已重发');
+              }}
+            >
+              重发验证邮件
+            </a>
+          }
+        />
+      )}
       <Layout>
         <Layout.Sider theme="light" width={180}>
           <Menu mode="inline" selectable={false} items={[{ key: 'overview', label: '总览', onClick: () => navigate('/pools') }]} />
