@@ -85,6 +85,7 @@ npm run dev
 |---|---|
 | `POST /auth/register` · `POST /auth/login` · `GET /auth/me` | 注册（OWNER）/ 登录 / 当前用户 |
 | `POST /auth/refresh` · `POST /auth/logout` · `POST /auth/logout-all` | 轮换刷新令牌 / 登出（撤当前会话）/ 全登出（撤全部会话）|
+| `POST /auth/forgot-password` · `POST /auth/reset-password` | 忘记密码（发重置邮件，**无枚举**）/ 重置密码（改密 + 撤全部会话）|
 | `GET /pools?includeArchived=` · `POST /pools` | 列出 / 新建泳池 |
 | `GET /pools/:id` · `PATCH /pools/:id` · `POST /pools/:id/archive` | 详情 / 编辑 / 归档（软删） |
 | `GET /pools/:id/swimmers` · `POST /pools/:id/swimmers` | 名册 / 新建会员（邮箱已存在则复用） |
@@ -97,7 +98,7 @@ npm run dev
 
 - **共享类型契约**：所有请求/响应类型定义在 `@swim/shared`；后端响应与前端 API 客户端共用，后端改接口形状会在前端**编译期**立即暴露。
 - **开发期代理**：前端 axios `baseURL='/api'`，Vite dev proxy 把 `/api/*` 转发到 `localhost:3000` 并剥离 `/api` 前缀；生产通过 `CORS_ORIGIN` 白名单放行前端源。
-- **鉴权**：短寿命 **access**（JWT，默认 15m）+ 旋转 **refresh**（不透明 256-bit、sha256 哈希存库、默认 30d 滑动、每次 `/auth/refresh` 轮换、**复用即撤族**）；两端 axios 在 401 时**单飞续期**并重试，对用户无感。登出/全登出服务端真撤销。`JwtAuthGuard` + `RolesGuard` 做角色门禁，`assertOwnsPool/Swimmer` 做资源级所有权。启动时校验 `JWT_SECRET`（缺失/占位/过短即 fail-fast）。
+- **鉴权**：短寿命 **access**（JWT，默认 15m）+ 旋转 **refresh**（不透明 256-bit、sha256 哈希存库、默认 30d 滑动、每次 `/auth/refresh` 轮换、**复用即撤族**）；两端 axios 在 401 时**单飞续期**并重试，对用户无感。登出/全登出服务端真撤销。**忘记/重置密码**：邮件链接（无枚举）、令牌哈希单用、重置即撤销全部会话。`JwtAuthGuard` + `RolesGuard` 做角色门禁，`assertOwnsPool/Swimmer` 做资源级所有权。启动时校验 `JWT_SECRET`（缺失/占位/过短即 fail-fast）。
 - **限流**：全局 100/60s 基线，`/auth/login`、`/auth/register` 收紧到 5/60s。
 - **看板热力图**：按 `APP_TIMEZONE`（默认 UTC）在 SQL 内按日聚合并格式化为 `YYYY-MM-DD`。
 
@@ -181,6 +182,11 @@ npm run prod:down    # 停止并清理
 - **请求关联**：每个请求带 `x-request-id`（回显入站值或生成），贯穿日志行、错误信封与响应头——排错时用它串起一次请求的全部日志。
 - **统一错误信封**：所有错误返回 `{ statusCode, error, message, requestId, timestamp, path }`（类型见 `@swim/shared` 的 `ApiErrorResponse`）；5xx 堆栈只进日志、不进响应体。
 - **安全头 / 压缩**：`helmet` + `compression`。**优雅关闭**：`SIGTERM/SIGINT` → Prisma 断连。
+
+### 邮件
+
+- 传输**可插拔**：配 `SMTP_HOST` 等走真 SMTP；**不配则 dev 传输**——邮件渲染后打到日志（`[DEV MAIL]`），本地/演示可直接从日志取重置链接，无需真凭证。
+- 相关变量：`MAIL_FROM`、`SMTP_HOST/PORT/USER/PASS/SECURE`、`PASSWORD_RESET_TTL`（见 `apps/api/.env.example`）。
 
 ## 文档
 
