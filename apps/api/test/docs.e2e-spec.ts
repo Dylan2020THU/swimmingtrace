@@ -25,4 +25,11 @@ describe('OpenAPI docs (e2e)', () => {
     expect(Object.keys(res.body.paths)).toEqual(expect.arrayContaining(['/auth/login', '/pools', '/health']));
     expect(res.body.components?.securitySchemes).toHaveProperty('bearer');
   });
+
+  it('路径带标签、受保护路径声明 Bearer、错误信封进 schema', async () => {
+    const res = await request(app.getHttpServer()).get('/docs-json').expect(200);
+    expect(res.body.paths['/pools'].get.tags).toContain('pools');
+    expect(res.body.paths['/pools'].get.security).toEqual(expect.arrayContaining([{ bearer: [] }]));
+    expect(res.body.components.schemas).toHaveProperty('ApiErrorResponseDto');
+  });
 });

@@ -2,9 +2,12 @@ import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/c
 import { Role } from '@prisma/client';
 import { ChallengesService, CreateChallengeBody } from './challenges.service';
 import { CurrentUser, JwtAuthGuard, Roles, RolesGuard } from '../common/auth.common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 type AuthedUser = { id: string; role: Role };
 
+@ApiTags('challenges')
+@ApiBearerAuth()
 @Controller()
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ChallengesController {

@@ -1,7 +1,10 @@
 import { BadRequestException, Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/auth.common';
 import { PlacesService } from './places.service';
 
+@ApiTags('places')
+@ApiBearerAuth()
 @Controller('places')
 @UseGuards(JwtAuthGuard)
 export class PlacesController {

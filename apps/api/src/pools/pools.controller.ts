@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import {
   CreatePoolDto,
@@ -18,6 +19,8 @@ import {
 
 type AuthedUser = { id: string; role: Role };
 
+@ApiTags('pools')
+@ApiBearerAuth()
 @Controller('pools')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PoolsController {

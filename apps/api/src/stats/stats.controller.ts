@@ -1,8 +1,11 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { StatsService } from './stats.service';
 import { CurrentUser, JwtAuthGuard, Roles, RolesGuard } from '../common/auth.common';
 import { Role } from '@prisma/client';
 
+@ApiTags('stats')
+@ApiBearerAuth()
 @Controller('stats')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class StatsController {

@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { CreateSessionDto, SessionsService } from './sessions.service';
 import {
@@ -8,6 +9,8 @@ import {
   RolesGuard,
 } from '../common/auth.common';
 
+@ApiTags('sessions')
+@ApiBearerAuth()
 @Controller('sessions')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SessionsController {

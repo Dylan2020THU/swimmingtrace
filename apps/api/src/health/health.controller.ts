@@ -1,10 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { HealthCheck, HealthCheckService } from '@nestjs/terminus';
 import { SkipThrottle } from '@nestjs/throttler';
 import { PrismaHealthIndicator } from './prisma.health';
 
 /** Public, un-throttled probes for orchestrators / load balancers. */
 @SkipThrottle()
+@ApiTags('health')
 @Controller('health')
 export class HealthController {
   constructor(

@@ -1,10 +1,12 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService, ClaimDto, ForgotPasswordDto, LoginDto, RefreshDto, RegisterDto, ResetPasswordDto, VerifyEmailDto } from './auth.service';
 import { PasswordResetService } from './password-reset.service';
 import { EmailVerificationService } from './email-verification.service';
 import { CurrentUser, JwtAuthGuard } from '../common/auth.common';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -52,6 +54,7 @@ export class AuthController {
   }
 
   @Post('logout-all')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   async logoutAll(@CurrentUser() user: { id: string }) {
     await this.auth.logoutAll(user.id);
@@ -81,6 +84,7 @@ export class AuthController {
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('resend-verification')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   async resendVerification(@CurrentUser() user: { id: string }) {
     await this.emailVerification.resend(user.id);
@@ -88,6 +92,7 @@ export class AuthController {
   }
 
   @Get('me')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: { id: string; email: string; role: string; emailVerifiedAt: Date | null }) {
     return user;
