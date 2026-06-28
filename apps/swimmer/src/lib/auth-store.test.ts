@@ -19,3 +19,13 @@ it('clear 清空 token+user', () => {
   expect(useAuthStore.getState().token).toBeNull();
   expect(useAuthStore.getState().user).toBeNull();
 });
+
+it('setAuth 第三参存 refreshToken；setTokens 同时更新双 token', () => {
+  useAuthStore.getState().setAuth('a1', { id: 's1', email: 's@x.com', role: 'SWIMMER' }, 'r1');
+  expect(useAuthStore.getState().refreshToken).toBe('r1');
+  useAuthStore.getState().setTokens('a2', 'r2');
+  expect(useAuthStore.getState().token).toBe('a2');
+  expect(useAuthStore.getState().refreshToken).toBe('r2');
+  useAuthStore.getState().clear();
+  expect(useAuthStore.getState().refreshToken).toBeNull();
+});
