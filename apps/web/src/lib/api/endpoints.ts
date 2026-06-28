@@ -11,6 +11,8 @@ export const login = (b: { email: string; password: string }) =>
 export const register = (b: { email: string; password: string; name?: string; role?: 'OWNER' }) =>
   api.post<LoginResponse>('/auth/register', b).then((r) => r.data);
 export const getMe = () => api.get<MeResponse>('/auth/me').then((r) => r.data);
+export const logout = (refreshToken: string) =>
+  api.post('/auth/logout', { refreshToken }).then((r) => r.data);
 
 export const listPools = (includeArchived = false) =>
   api.get<PoolSummary[]>('/pools', { params: includeArchived ? { includeArchived: 'true' } : {} }).then((r) => r.data);

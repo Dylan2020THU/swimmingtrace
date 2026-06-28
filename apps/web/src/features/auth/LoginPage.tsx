@@ -14,12 +14,12 @@ export function LoginPage() {
   const onFinish = async (v: { email: string; password: string }) => {
     setLoading(true);
     try {
-      const { accessToken } = mode === 'login'
+      const { accessToken, refreshToken } = mode === 'login'
         ? await login(v)
         : await register({ ...v, role: 'OWNER' });
-      useAuthStore.getState().setAuth(accessToken, { id: '', email: v.email, role: 'OWNER' });
+      useAuthStore.getState().setAuth(accessToken, { id: '', email: v.email, role: 'OWNER' }, refreshToken);
       const me = await getMe();
-      setAuth(accessToken, me);
+      setAuth(accessToken, me, refreshToken);
       navigate('/pools');
     } catch (e: any) {
       message.error(e?.response?.data?.message ?? '操作失败');

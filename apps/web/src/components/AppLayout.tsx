@@ -2,6 +2,7 @@ import { Layout, Menu, Select, Button, Space, Tag, Typography } from 'antd';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { usePools, useActiveChallenges } from '../lib/queries';
 import { useAuthStore } from '../lib/auth-store';
+import { logout as apiLogout } from '../lib/api/endpoints';
 
 export function AppLayout() {
   const navigate = useNavigate();
@@ -11,7 +12,12 @@ export function AppLayout() {
   const user = useAuthStore((s) => s.user);
   const clear = useAuthStore((s) => s.clear);
 
-  const logout = () => { clear(); navigate('/login'); };
+  const logout = async () => {
+    const rt = useAuthStore.getState().refreshToken;
+    if (rt) await apiLogout(rt).catch(() => {});
+    clear();
+    navigate('/login');
+  };
 
   return (
     <Layout style={{ minHeight: '100vh' }}>

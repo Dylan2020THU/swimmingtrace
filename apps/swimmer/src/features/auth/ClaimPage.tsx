@@ -28,10 +28,10 @@ export function ClaimPage() {
     }
     setLoading(true);
     try {
-      const { accessToken } = await claim({ token, password: v.password });
-      setAuth(accessToken, { id: '', email: info?.email ?? '', role: 'SWIMMER' });
+      const { accessToken, refreshToken } = await claim({ token, password: v.password });
+      setAuth(accessToken, { id: '', email: info?.email ?? '', role: 'SWIMMER' }, refreshToken);
       const me = await getMe();
-      setAuth(accessToken, me);
+      setAuth(accessToken, me, refreshToken);
       navigate('/');
     } catch (e: any) {
       Toast.show({ content: e?.response?.data?.message ?? '认领失败' });

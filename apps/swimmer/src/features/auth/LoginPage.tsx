@@ -12,10 +12,10 @@ export function LoginPage() {
   const onFinish = async (v: { email: string; password: string }) => {
     setLoading(true);
     try {
-      const { accessToken } = await login(v);
-      useAuthStore.getState().setAuth(accessToken, { id: '', email: v.email, role: 'SWIMMER' });
+      const { accessToken, refreshToken } = await login(v);
+      useAuthStore.getState().setAuth(accessToken, { id: '', email: v.email, role: 'SWIMMER' }, refreshToken);
       const me = await getMe();
-      setAuth(accessToken, me);
+      setAuth(accessToken, me, refreshToken);
       navigate('/');
     } catch (e: any) {
       Toast.show({ content: e?.response?.data?.message ?? '登录失败' });

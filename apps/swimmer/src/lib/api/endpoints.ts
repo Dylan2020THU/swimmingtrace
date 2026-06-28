@@ -12,6 +12,8 @@ export const getClaimInfo = (token: string) =>
   api.get<ClaimInfoResponse>(`/auth/claim/${token}`).then((r) => r.data);
 export const claim = (b: ClaimAccountDto) =>
   api.post<LoginResponse>('/auth/claim', b).then((r) => r.data);
+export const logout = (refreshToken: string) =>
+  api.post('/auth/logout', { refreshToken }).then((r) => r.data);
 
 export const getMyPools = () => api.get<MyPoolItem[]>('/me/pools').then((r) => r.data);
 export const recordMySession = (b: CreateSessionDto) => api.post('/sessions', b).then((r) => r.data);
