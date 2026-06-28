@@ -5,6 +5,7 @@ import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
 import compression from 'compression';
 import { AppModule } from './app.module';
+import { setupSwagger } from './swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -28,6 +29,10 @@ async function bootstrap() {
     .map((o) => o.trim())
     .filter(Boolean);
   app.enableCors({ origin: origins, credentials: true });
+
+  if (config.get<string>('SWAGGER_ENABLED') !== 'false') {
+    setupSwagger(app);
+  }
 
   await app.listen(config.get<string>('PORT') ?? '3000');
 }
