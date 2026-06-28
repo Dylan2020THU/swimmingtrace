@@ -32,6 +32,7 @@ model User {
   ownedPools    Pool[]         @relation("PoolOwner")
   registrations Registration[]
   sessions      SwimSession[]
+  refreshTokens RefreshToken[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   claimedAt     DateTime?
@@ -97,4 +98,21 @@ model SwimSession {
 
   // Hot path for the heatmap: per-swimmer, ordered by date.
   @@index([swimmerId, swamAt])
+}
+
+// Rotating refresh tokens (hashed). A login starts a family; each /auth/refresh
+// rotates within the family. Replaying a revoked token revokes the whole family.
+model RefreshToken {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String    @unique
+  familyId     String
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  revokedAt    DateTime?
+  replacedById String?
+
+  @@index([userId])
+  @@index([familyId])
 }
