@@ -44,4 +44,15 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...ok, LOG_LEVEL: 'verbose' })).toThrow(/LOG_LEVEL/);
     expect(() => validateEnv({ ...ok, PORT: 'abc' })).toThrow(/PORT/);
   });
+
+  it('回填 JWT_EXPIRES_IN=15m 与 REFRESH_TOKEN_TTL=30d 默认', () => {
+    const out = validateEnv({ ...ok });
+    expect(out.JWT_EXPIRES_IN).toBe('15m');
+    expect(out.REFRESH_TOKEN_TTL).toBe('30d');
+  });
+
+  it('非法时长字符串抛错', () => {
+    expect(() => validateEnv({ ...ok, REFRESH_TOKEN_TTL: '30days' })).toThrow(/REFRESH_TOKEN_TTL/);
+    expect(() => validateEnv({ ...ok, JWT_EXPIRES_IN: 'abc' })).toThrow(/JWT_EXPIRES_IN/);
+  });
 });

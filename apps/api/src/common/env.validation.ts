@@ -40,6 +40,16 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
     throw new Error(`PORT must be a positive integer; got "${port}".`);
   }
 
+  const DURATION_RE = /^\d+(ms|s|m|h|d)$/;
+  const jwtExpiresIn = (config.JWT_EXPIRES_IN as string) ?? '15m';
+  if (!DURATION_RE.test(jwtExpiresIn)) {
+    throw new Error(`JWT_EXPIRES_IN must be a duration like 15m/1d; got "${jwtExpiresIn}".`);
+  }
+  const refreshTtl = (config.REFRESH_TOKEN_TTL as string) ?? '30d';
+  if (!DURATION_RE.test(refreshTtl)) {
+    throw new Error(`REFRESH_TOKEN_TTL must be a duration like 30d; got "${refreshTtl}".`);
+  }
+
   return {
     ...config,
     NODE_ENV: nodeEnv,
@@ -48,5 +58,7 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
     CORS_ORIGIN: (config.CORS_ORIGIN as string) ?? 'http://localhost:5173',
     SWIMMER_APP_URL: (config.SWIMMER_APP_URL as string) ?? 'http://localhost:5174',
     APP_TIMEZONE: (config.APP_TIMEZONE as string) ?? 'UTC',
+    JWT_EXPIRES_IN: jwtExpiresIn,
+    REFRESH_TOKEN_TTL: refreshTtl,
   };
 }
