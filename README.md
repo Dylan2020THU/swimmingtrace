@@ -103,6 +103,15 @@ npm run dev
 - **限流**：全局 100/60s 基线，`/auth/login`、`/auth/register` 收紧到 5/60s。
 - **看板热力图**：按 `APP_TIMEZONE`（默认 UTC）在 SQL 内按日聚合并格式化为 `YYYY-MM-DD`。
 
+## API 文档
+
+后端启动后，OpenAPI 文档在线可用：
+
+- **`GET /docs`** —— Swagger UI（可浏览全部端点、按标签分组、在线调试）。
+- **`GET /docs-json`** —— 原始 OpenAPI JSON（可喂给客户端生成器/Postman）。
+
+含 Bearer 鉴权声明与统一错误信封（`ApiErrorResponse`）schema。生产可置 `SWAGGER_ENABLED=false` 关闭。
+
 ## 测试
 
 ```bash
