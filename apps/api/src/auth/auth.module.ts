@@ -6,11 +6,14 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { RefreshTokenService } from './refresh-token.service';
+import { PasswordResetService } from './password-reset.service';
+import { MailModule } from '../mail/mail.module';
 import { PrismaService } from '../prisma.service';
 
 @Module({
   imports: [
     PassportModule,
+    MailModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -21,6 +24,6 @@ import { PrismaService } from '../prisma.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RefreshTokenService, PrismaService],
+  providers: [AuthService, JwtStrategy, RefreshTokenService, PasswordResetService, PrismaService],
 })
 export class AuthModule {}

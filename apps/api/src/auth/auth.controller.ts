@@ -1,11 +1,15 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { AuthService, ClaimDto, LoginDto, RefreshDto, RegisterDto } from './auth.service';
+import { AuthService, ClaimDto, ForgotPasswordDto, LoginDto, RefreshDto, RegisterDto, ResetPasswordDto } from './auth.service';
+import { PasswordResetService } from './password-reset.service';
 import { CurrentUser, JwtAuthGuard } from '../common/auth.common';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private auth: AuthService) {}
+  constructor(
+    private auth: AuthService,
+    private passwordReset: PasswordResetService,
+  ) {}
 
   // Tighter limit on credential endpoints to blunt brute-force / stuffing.
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
@@ -49,6 +53,20 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async logoutAll(@CurrentUser() user: { id: string }) {
     await this.auth.logoutAll(user.id);
+    return { ok: true };
+  }
+
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    await this.passwordReset.forgot(dto.email);
+    return { ok: true };
+  }
+
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.passwordReset.reset(dto.token, dto.password);
     return { ok: true };
   }
 
