@@ -29,4 +29,14 @@ describe('MailService', () => {
     expect(arg.to).toBe('a@b.c');
     expect(arg.text).toContain('http://x/reset-password?token=T');
   });
+
+  it('sendClaimLink 调底层 sendMail 且含 claimUrl', async () => {
+    const sendMail = jest.fn().mockResolvedValue({});
+    mockCreateTransport.mockReturnValueOnce({ sendMail });
+    const svc = new MailService(cfg({}));
+    await svc.sendClaimLink('sw@x.com', 'http://swim/claim/TOK');
+    const arg = sendMail.mock.calls[0][0];
+    expect(arg.to).toBe('sw@x.com');
+    expect(arg.text).toContain('http://swim/claim/TOK');
+  });
 });

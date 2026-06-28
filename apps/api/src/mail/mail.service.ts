@@ -54,4 +54,13 @@ export class MailService {
       text: `重置密码（1 小时内有效）：${resetUrl}`,
     });
   }
+
+  async sendClaimLink(to: string, claimUrl: string): Promise<void> {
+    await this.sendMail({
+      to,
+      subject: '你被邀请加入 SwimmingTrace 泳池',
+      html: `<p>泳池主邀请你加入。点击设置密码并登录（7 天内有效）：</p><p><a href="${claimUrl}">${claimUrl}</a></p>`,
+      text: `加入泳池（7 天内有效）：${claimUrl}`,
+    });
+  }
 }
