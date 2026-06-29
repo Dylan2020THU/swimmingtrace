@@ -1,13 +1,14 @@
-import { ReactNode, useEffect, useRef } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactNode, useEffect, useRef, useState } from 'react';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { App as AntdApp, ConfigProvider } from 'antd';
 import { useAuthStore } from '../lib/auth-store';
 import { getMe } from '../lib/api/endpoints';
+import { createQueryClient } from '../lib/query-client';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
-const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } });
-
-export function Providers({ children }: { children: ReactNode }) {
+function Inner({ children }: { children: ReactNode }) {
+  const { message } = AntdApp.useApp();
+  const [queryClient] = useState(() => createQueryClient((m) => message.error(m)));
   const token = useAuthStore((s) => s.token);
   const setUser = useAuthStore((s) => s.setUser);
   const clear = useAuthStore((s) => s.clear);
@@ -21,7 +22,17 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ConfigProvider><AntdApp><ErrorBoundary>{children}</ErrorBoundary></AntdApp></ConfigProvider>
+      <ErrorBoundary>{children}</ErrorBoundary>
     </QueryClientProvider>
+  );
+}
+
+export function Providers({ children }: { children: ReactNode }) {
+  return (
+    <ConfigProvider>
+      <AntdApp>
+        <Inner>{children}</Inner>
+      </AntdApp>
+    </ConfigProvider>
   );
 }
