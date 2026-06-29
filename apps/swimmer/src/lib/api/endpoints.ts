@@ -1,4 +1,5 @@
 import { api } from './client';
+import { idempotencyKey } from '../idempotency';
 import type {
   LoginResponse, MeResponse, ClaimInfoResponse, ClaimAccountDto,
   MyPoolItem, CreateSessionDto, SwimSessionItem, HeatmapCell, SwimmerStats, MyChallengeItem, NearbyPlace, Paginated,
@@ -20,7 +21,8 @@ export const resetPassword = (token: string, password: string) =>
   api.post('/auth/reset-password', { token, password }).then((r) => r.data);
 
 export const getMyPools = () => api.get<MyPoolItem[]>('/me/pools').then((r) => r.data);
-export const recordMySession = (b: CreateSessionDto) => api.post('/sessions', b).then((r) => r.data);
+export const recordMySession = (b: CreateSessionDto) =>
+  api.post('/sessions', b, { headers: { 'Idempotency-Key': idempotencyKey() } }).then((r) => r.data);
 export const getMySessions = (page = 1) =>
   api.get<Paginated<SwimSessionItem>>('/sessions/me', { params: { page } }).then((r) => r.data);
 export const getMySummary = () =>
