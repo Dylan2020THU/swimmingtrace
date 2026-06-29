@@ -87,6 +87,21 @@ export interface SwimmerStats {
 // pagination — offset-paginated list envelope
 export interface Paginated<T> { items: T[]; total: number; page: number; pageSize: number; }
 
+// data & compliance — owner self-service export (portability) + account deletion (erasure)
+export interface AccountExport {
+  exportedAt: string;
+  account: { id: string; email: string; name: string | null; role: string; createdAt: string };
+  pools: Array<{
+    id: string; name: string; address: string | null;
+    latitude: number | null; longitude: number | null;
+    createdAt: string; archivedAt: string | null;
+    swimmers: Array<{ swimmerId: string; email: string; name: string | null; status: string; joinedAt: string }>;
+    sessions: Array<{ id: string; swimmerId: string; poolId: string | null; distanceMeters: number; durationSeconds: number | null; swamAt: string; createdAt: string }>;
+    challenges: Array<{ id: string; name: string; goalDistanceMeters: number; startDate: string; endDate: string }>;
+  }>;
+}
+export interface DeleteAccountDto { password: string; }
+
 // platform — uniform error envelope returned by the global exception filter for ALL errors
 export interface ApiErrorResponse {
   statusCode: number;

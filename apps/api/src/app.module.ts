@@ -9,6 +9,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { IdempotencyInterceptor } from './common/idempotency/idempotency.interceptor';
 import { ObservabilityMiddleware } from './common/observability/observability.middleware';
 import { MetricsModule } from './metrics/metrics.module';
+import { AccountModule } from './account/account.module';
 import { genReqId } from './common/logging/req-id';
 import { AuthModule } from './auth/auth.module';
 import { PoolsModule } from './pools/pools.module';
@@ -53,6 +54,7 @@ import { HealthModule } from './health/health.module';
     ChallengesModule,
     HealthModule,
     MetricsModule,
+    AccountModule,
   ],
   providers: [
     PrismaService,
