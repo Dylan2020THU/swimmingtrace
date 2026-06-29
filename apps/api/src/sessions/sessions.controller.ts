@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { PaginationQuery } from '../common/pagination';
 import { Role } from '@prisma/client';
 import { CreateSessionDto, SessionsService } from './sessions.service';
 import {
@@ -24,7 +25,7 @@ export class SessionsController {
 
   @Get('me')
   @Roles(Role.SWIMMER)
-  mine(@CurrentUser() user: { id: string }) {
-    return this.sessions.listForSwimmer(user.id);
+  mine(@CurrentUser() user: { id: string }, @Query() q: PaginationQuery) {
+    return this.sessions.listForSwimmer(user.id, q.page, q.pageSize);
   }
 }

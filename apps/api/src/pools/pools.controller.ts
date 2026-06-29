@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { PaginationQuery } from '../common/pagination';
 import { Role } from '@prisma/client';
 import {
   CreatePoolDto,
@@ -56,8 +57,8 @@ export class PoolsController {
 
   @Get(':id/swimmers')
   @Roles(Role.OWNER)
-  swimmers(@Param('id') poolId: string, @CurrentUser() user: AuthedUser) {
-    return this.pools.listSwimmers(user.id, poolId);
+  swimmers(@Param('id') poolId: string, @CurrentUser() user: AuthedUser, @Query() q: PaginationQuery) {
+    return this.pools.listSwimmers(user.id, poolId, q.page, q.pageSize);
   }
 
   @Patch(':id')

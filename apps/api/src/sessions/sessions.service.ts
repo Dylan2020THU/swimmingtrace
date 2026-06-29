@@ -7,6 +7,7 @@ import {
   Min,
 } from 'class-validator';
 import { PrismaService } from '../prisma.service';
+import { paginate } from '../common/pagination';
 
 export class CreateSessionDto {
   @IsInt() @Min(1) distanceMeters: number;
@@ -41,11 +42,13 @@ export class SessionsService {
     });
   }
 
-  listForSwimmer(swimmerId: string, take = 100) {
-    return this.prisma.swimSession.findMany({
-      where: { swimmerId },
-      orderBy: { swamAt: 'desc' },
-      take,
-    });
+  async listForSwimmer(swimmerId: string, page?: number, pageSize?: number) {
+    const { skip, take, page: p, pageSize: ps } = paginate(page, pageSize);
+    const where = { swimmerId };
+    const [items, total] = await Promise.all([
+      this.prisma.swimSession.findMany({ where, orderBy: { swamAt: 'desc' }, skip, take }),
+      this.prisma.swimSession.count({ where }),
+    ]);
+    return { items, total, page: p, pageSize: ps };
   }
 }

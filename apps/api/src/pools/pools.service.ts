@@ -4,8 +4,9 @@ import { Prisma } from '@prisma/client';
 import { IsDateString, IsEmail, IsEnum, IsInt, IsLatitude, IsLongitude, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { PrismaService } from '../prisma.service';
 import { MailService } from '../mail/mail.service';
-import { ClaimLinkResponse, CreateSessionDto, PoolDetail, PoolSummary, SwimmerListItem } from '@swim/shared';
+import { ClaimLinkResponse, CreateSessionDto, Paginated, PoolDetail, PoolSummary, SwimmerListItem } from '@swim/shared';
 import { assertOwnsPool } from '../common/ownership';
+import { paginate } from '../common/pagination';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 
@@ -118,15 +119,26 @@ export class PoolsService {
     return this.prisma.pool.update({ where: { id: poolId }, data: { archivedAt: new Date() } });
   }
 
-  async listSwimmers(ownerId: string, poolId: string): Promise<SwimmerListItem[]> {
+  async listSwimmers(
+    ownerId: string,
+    poolId: string,
+    page?: number,
+    pageSize?: number,
+  ): Promise<Paginated<SwimmerListItem>> {
     await assertOwnsPool(this.prisma, ownerId, poolId);
-    const regs = await this.prisma.registration.findMany({
-      where: { poolId },
-      include: { swimmer: { select: { id: true, name: true, email: true, claimedAt: true } } },
-      orderBy: { joinedAt: 'desc' },
-    });
+    const { skip, take, page: p, pageSize: ps } = paginate(page, pageSize);
+    const [regs, total] = await Promise.all([
+      this.prisma.registration.findMany({
+        where: { poolId },
+        include: { swimmer: { select: { id: true, name: true, email: true, claimedAt: true } } },
+        orderBy: { joinedAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.prisma.registration.count({ where: { poolId } }),
+    ]);
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    return Promise.all(
+    const items = await Promise.all(
       regs.map(async (r) => {
         const agg = await this.prisma.swimSession.aggregate({
           where: { swimmerId: r.swimmerId, poolId, swamAt: { gte: since } },
@@ -139,6 +151,7 @@ export class PoolsService {
         };
       }),
     );
+    return { items, total, page: p, pageSize: ps };
   }
 
   async createSwimmer(ownerId: string, poolId: string, dto: CreateSwimmerDto): Promise<SwimmerListItem> {
