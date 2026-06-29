@@ -3,6 +3,7 @@ import { App, Button, Card, Input, Modal, Space, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { exportAccount, deleteAccount } from '../../lib/api/endpoints';
 import { useAuthStore } from '../../lib/auth-store';
+import { PlanCard } from './PlanCard';
 
 export function AccountPage() {
   const { message } = App.useApp();
@@ -48,6 +49,7 @@ export function AccountPage() {
   return (
     <Space direction="vertical" style={{ width: '100%' }} size="large">
       <Typography.Title level={3}>账号与数据</Typography.Title>
+      <PlanCard />
       <Card title="导出我的数据">
         <Typography.Paragraph type="secondary">
           导出账号及名下全部泳池、会员、记录、挑战为 JSON 文件（数据可携）。
