@@ -15,7 +15,8 @@ export const handlers = [
   http.post('/api/auth/resend-verification', () => HttpResponse.json({ ok: true })),
   http.get('/api/pools/:id/swimmers', () => HttpResponse.json({ items: [], total: 0, page: 1, pageSize: 20 })),
   http.get('/api/account/plan', () =>
-    HttpResponse.json({ plan: 'FREE', limits: { maxPools: 1, maxMembers: 25 }, usage: { pools: 0, members: 0 }, features: { export: false, challenges: false } })),
+    HttpResponse.json({ plan: 'FREE', limits: { maxPools: 1, maxMembers: 25 }, usage: { pools: 0, members: 0 }, features: { export: false, challenges: false, apiKeys: false } })),
+  http.get('/api/api-keys', () => HttpResponse.json([])),
 ];
 
 export const server = setupServer(...handlers);

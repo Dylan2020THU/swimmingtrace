@@ -5,6 +5,7 @@ import type {
   CreateSwimmerDto, SwimmerListItem, UpdateMembershipDto, CreateSessionDto, Paginated,
   OverviewStats, PoolStats, SwimmerStats, ClaimLinkResponse,
   ChallengeSummary, ChallengeDetail, CreateChallengeDto, ActiveChallengeItem, AccountExport, Plan, PlanInfo,
+  ApiKeyListItem, CreatedApiKey,
 } from '@swim/shared';
 
 export const login = (b: { email: string; password: string }) =>
@@ -55,6 +56,11 @@ export const getActiveChallenges = () =>
 
 export const getPlan = () => api.get<PlanInfo>('/account/plan').then((r) => r.data);
 export const setPlan = (plan: Plan) => api.post<PlanInfo>('/account/plan', { plan }).then((r) => r.data);
+export const listApiKeys = () => api.get<ApiKeyListItem[]>('/api-keys').then((r) => r.data);
+export const createApiKey = (label: string) =>
+  api.post<CreatedApiKey>('/api-keys', { label }).then((r) => r.data);
+export const revokeApiKey = (id: string) => api.delete(`/api-keys/${id}`).then((r) => r.data);
+
 export const exportAccount = () => api.get<AccountExport>('/account/export').then((r) => r.data);
 export const deleteAccount = (password: string) =>
   api.delete('/account', { data: { password } }).then((r) => r.data);

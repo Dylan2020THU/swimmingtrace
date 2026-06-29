@@ -3,6 +3,21 @@ import type { CreatePoolDto, UpdatePoolDto, CreateSwimmerDto, UpdateMembershipDt
 import * as ep from './api/endpoints';
 
 export const usePlan = () => useQuery({ queryKey: ['plan'], queryFn: ep.getPlan });
+export const useApiKeys = () => useQuery({ queryKey: ['apiKeys'], queryFn: ep.listApiKeys });
+export function useCreateApiKey() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (label: string) => ep.createApiKey(label),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['apiKeys'] }),
+  });
+}
+export function useRevokeApiKey() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => ep.revokeApiKey(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['apiKeys'] }),
+  });
+}
 export function useSetPlan() {
   const qc = useQueryClient();
   return useMutation({
