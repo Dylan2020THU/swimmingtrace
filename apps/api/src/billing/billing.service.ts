@@ -53,10 +53,10 @@ export class BillingService {
     }
   }
 
-  async assertFeature(ownerId: string, feature: 'export' | 'challenges'): Promise<void> {
+  async assertFeature(ownerId: string, feature: 'export' | 'challenges' | 'apiKeys'): Promise<void> {
     const plan = await this.planOf(ownerId);
     if (!PLAN_LIMITS[plan].features[feature]) {
-      const label = feature === 'export' ? '数据导出' : '挑战赛';
+      const label = feature === 'export' ? '数据导出' : feature === 'challenges' ? '挑战赛' : 'API Keys';
       throw new PaymentRequiredException(`${label}为 Pro 功能，请升级到 Pro`);
     }
   }

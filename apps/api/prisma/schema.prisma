@@ -41,6 +41,7 @@ model User {
   sessions      SwimSession[]
   refreshTokens RefreshToken[]
   idempotencyKeys IdempotencyKey[]
+  apiKeys       ApiKey[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   claimedAt     DateTime?
@@ -148,4 +149,19 @@ model IdempotencyKey {
 
   @@unique([userId, key])
   @@index([createdAt])
+}
+
+// Long-lived programmatic credential for an owner. Stored hashed (sha256); the
+// plaintext (prefix swk_) is shown once at creation. A key acts as its owner.
+model ApiKey {
+  id         String    @id @default(uuid())
+  ownerId    String
+  owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  label      String
+  prefix     String
+  keyHash    String    @unique
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([ownerId])
 }

@@ -10,6 +10,7 @@ import { IdempotencyInterceptor } from './common/idempotency/idempotency.interce
 import { ObservabilityMiddleware } from './common/observability/observability.middleware';
 import { MetricsModule } from './metrics/metrics.module';
 import { AccountModule } from './account/account.module';
+import { ApiKeysModule } from './api-keys/api-keys.module';
 import { genReqId } from './common/logging/req-id';
 import { AuthModule } from './auth/auth.module';
 import { PoolsModule } from './pools/pools.module';
@@ -55,6 +56,7 @@ import { HealthModule } from './health/health.module';
     HealthModule,
     MetricsModule,
     AccountModule,
+    ApiKeysModule,
   ],
   providers: [
     PrismaService,

@@ -108,9 +108,14 @@ export interface PlanInfo {
   plan: Plan;
   limits: { maxPools: number; maxMembers: number };
   usage: { pools: number; members: number };
-  features: { export: boolean; challenges: boolean };
+  features: { export: boolean; challenges: boolean; apiKeys: boolean };
 }
 export interface SetPlanDto { plan: Plan; }
+
+// api keys — programmatic owner access (act-as-owner; stored hashed, plaintext shown once)
+export interface ApiKeyListItem { id: string; label: string; prefix: string; lastUsedAt: string | null; createdAt: string; }
+export interface CreatedApiKey { id: string; label: string; prefix: string; key: string; createdAt: string; }
+export interface CreateApiKeyDto { label: string; }
 
 // platform — uniform error envelope returned by the global exception filter for ALL errors
 export interface ApiErrorResponse {
