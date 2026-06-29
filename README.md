@@ -99,6 +99,7 @@ npm run dev
 
 - **共享类型契约**：所有请求/响应类型定义在 `@swim/shared`；后端响应与前端 API 客户端共用，后端改接口形状会在前端**编译期**立即暴露。
 - **开发期代理**：前端 axios `baseURL='/api'`，Vite dev proxy 把 `/api/*` 转发到 `localhost:3000` 并剥离 `/api` 前缀；生产通过 `CORS_ORIGIN` 白名单放行前端源。
+- **前端韧性**：两端均有 `ErrorBoundary`（渲染异常显示友好兜底 + 刷新，而非白屏）；`QueryClient` 统一 `QueryCache.onError`，数据拉取失败弹出可读提示（web `message`、swimmer `Toast`），不再静默——mutation 仍保留各自就地错误处理。
 - **鉴权**：短寿命 **access**（JWT，默认 15m）+ 旋转 **refresh**（不透明 256-bit、sha256 哈希存库、默认 30d 滑动、每次 `/auth/refresh` 轮换、**复用即撤族**）；两端 axios 在 401 时**单飞续期**并重试，对用户无感。登出/全登出服务端真撤销。**忘记/重置密码**：邮件链接（无枚举）、令牌哈希单用、重置即撤销全部会话。**邮箱验证**：OWNER 注册发验证信、`emailVerifiedAt` 记录、**软门禁**（未验证仍可登录，控制台横幅 + 重发）；认领游泳者认领时自动已验证。`JwtAuthGuard` + `RolesGuard` 做角色门禁，`assertOwnsPool/Swimmer` 做资源级所有权。启动时校验 `JWT_SECRET`（缺失/占位/过短即 fail-fast）。
 - **限流**：全局 100/60s 基线，`/auth/login`、`/auth/register` 收紧到 5/60s。
 - **幂等键**：认证的**创建型 POST** 可带 `Idempotency-Key` 头安全重放——首次执行落库（状态码 + 响应体，按 `userId` 作用域），同 key 重放直接返回原响应（不重复副作用），同 key 异载荷 → `422`，并发/进行中同 key → `409`，handler 失败则释放 key 允许重试。全局 `IdempotencyInterceptor` 实现；两端 session 自录/代录请求已自动携带该头（弱网/单飞续期重发不会把一次游泳记成两次）。
