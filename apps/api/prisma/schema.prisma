@@ -33,6 +33,7 @@ model User {
   registrations Registration[]
   sessions      SwimSession[]
   refreshTokens RefreshToken[]
+  idempotencyKeys IdempotencyKey[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   claimedAt     DateTime?
@@ -120,4 +121,24 @@ model RefreshToken {
 
   @@index([userId])
   @@index([familyId])
+}
+
+// Stores the response of an authenticated create-POST keyed by (userId, Idempotency-Key)
+// so a retry replays the original result instead of duplicating the side effect.
+// `completedAt == null` marks an in-flight request (concurrent replays get 409).
+model IdempotencyKey {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key            String
+  method         String
+  path           String
+  requestHash    String
+  responseStatus Int?
+  responseBody   Json?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@unique([userId, key])
+  @@index([createdAt])
 }

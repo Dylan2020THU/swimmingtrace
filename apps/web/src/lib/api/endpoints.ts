@@ -1,4 +1,5 @@
 import { api } from './client';
+import { idempotencyKey } from '../idempotency';
 import type {
   LoginResponse, MeResponse, CreatePoolDto, UpdatePoolDto, PoolSummary, PoolDetail,
   CreateSwimmerDto, SwimmerListItem, UpdateMembershipDto, CreateSessionDto, Paginated,
@@ -36,7 +37,9 @@ export const createSwimmer = (poolId: string, b: CreateSwimmerDto) =>
 export const setMembership = (poolId: string, sid: string, b: UpdateMembershipDto) =>
   api.patch(`/pools/${poolId}/swimmers/${sid}`, b).then((r) => r.data);
 export const recordSession = (poolId: string, sid: string, b: CreateSessionDto) =>
-  api.post(`/pools/${poolId}/swimmers/${sid}/sessions`, b).then((r) => r.data);
+  api.post(`/pools/${poolId}/swimmers/${sid}/sessions`, b, {
+    headers: { 'Idempotency-Key': idempotencyKey() },
+  }).then((r) => r.data);
 export const generateClaimLink = (poolId: string, sid: string) =>
   api.post<ClaimLinkResponse>(`/pools/${poolId}/swimmers/${sid}/claim-link`).then((r) => r.data);
 

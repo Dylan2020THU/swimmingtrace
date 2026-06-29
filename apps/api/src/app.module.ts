@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { PrismaService } from './prisma.service';
 import { validateEnv } from './common/env.validation';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { IdempotencyInterceptor } from './common/idempotency/idempotency.interceptor';
 import { genReqId } from './common/logging/req-id';
 import { AuthModule } from './auth/auth.module';
 import { PoolsModule } from './pools/pools.module';
@@ -54,6 +55,7 @@ import { HealthModule } from './health/health.module';
     PrismaService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
+    { provide: APP_INTERCEPTOR, useClass: IdempotencyInterceptor },
   ],
   exports: [PrismaService],
 })
