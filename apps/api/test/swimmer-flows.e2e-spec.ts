@@ -56,6 +56,16 @@ describe('Swimmer claim & self-record (e2e)', () => {
       .post('/sessions').set('Authorization', `Bearer ${swToken}`)
       .send({ distanceMeters: 1500, swamAt: `${day}T08:00:00.000Z`, poolId: pool.body.id }).expect(201);
 
+    // 分页信封：泳动历史与名册返回 { items, total, page, pageSize }
+    const hist = await request(srv()).get('/sessions/me?pageSize=1').set('Authorization', `Bearer ${swToken}`).expect(200);
+    expect(hist.body).toMatchObject({ page: 1, pageSize: 1 });
+    expect(typeof hist.body.total).toBe('number');
+    expect(hist.body.items.length).toBeGreaterThan(0);
+
+    const roster = await request(srv()).get(`/pools/${pool.body.id}/swimmers?pageSize=5`).set('Authorization', `Bearer ${owner}`).expect(200);
+    expect(roster.body).toMatchObject({ page: 1, pageSize: 5 });
+    expect(roster.body.items.find((s: { email: string }) => s.email === 'sam@x.com')).toBeTruthy();
+
     const ps = await request(srv()).get(`/stats/pool/${pool.body.id}`).set('Authorization', `Bearer ${owner}`).expect(200);
     expect(ps.body.heatmap).toContainEqual({ date: day, distanceMeters: 1500 });
   });

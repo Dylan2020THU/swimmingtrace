@@ -13,6 +13,7 @@ export const handlers = [
   http.post('/api/auth/reset-password', () => HttpResponse.json({ ok: true })),
   http.post('/api/auth/verify-email', () => HttpResponse.json({ ok: true })),
   http.post('/api/auth/resend-verification', () => HttpResponse.json({ ok: true })),
+  http.get('/api/pools/:id/swimmers', () => HttpResponse.json({ items: [], total: 0, page: 1, pageSize: 20 })),
 ];
 
 export const server = setupServer(...handlers);

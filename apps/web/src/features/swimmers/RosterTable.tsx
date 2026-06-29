@@ -7,7 +7,8 @@ import { CreateSwimmerModal } from './CreateSwimmerModal';
 import { ClaimLinkButton } from './ClaimLinkButton';
 
 export function RosterTable({ poolId }: { poolId: string }) {
-  const swimmers = useSwimmers(poolId);
+  const [page, setPage] = useState(1);
+  const swimmers = useSwimmers(poolId, page);
   const setMembership = useSetMembership(poolId);
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
@@ -40,8 +41,9 @@ export function RosterTable({ poolId }: { poolId: string }) {
   return (
     <Card title="会员名册" extra={<Button type="primary" onClick={() => setOpen(true)}>新建会员</Button>}>
       <Table<SwimmerListItem>
-        rowKey="swimmerId" loading={swimmers.isLoading} dataSource={swimmers.data ?? []} columns={columns}
+        rowKey="swimmerId" loading={swimmers.isLoading} dataSource={swimmers.data?.items ?? []} columns={columns}
         onRow={(r) => ({ onClick: () => navigate(`/pools/${poolId}/swimmers/${r.swimmerId}`), style: { cursor: 'pointer' } })}
+        pagination={{ current: page, pageSize: 20, total: swimmers.data?.total ?? 0, onChange: setPage }}
         locale={{ emptyText: '还没有会员，点击"新建会员"添加' }}
       />
       <CreateSwimmerModal poolId={poolId} open={open} onClose={() => setOpen(false)} />

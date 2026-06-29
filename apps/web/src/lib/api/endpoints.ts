@@ -1,7 +1,7 @@
 import { api } from './client';
 import type {
   LoginResponse, MeResponse, CreatePoolDto, UpdatePoolDto, PoolSummary, PoolDetail,
-  CreateSwimmerDto, SwimmerListItem, UpdateMembershipDto, CreateSessionDto,
+  CreateSwimmerDto, SwimmerListItem, UpdateMembershipDto, CreateSessionDto, Paginated,
   OverviewStats, PoolStats, SwimmerStats, ClaimLinkResponse,
   ChallengeSummary, ChallengeDetail, CreateChallengeDto, ActiveChallengeItem,
 } from '@swim/shared';
@@ -29,8 +29,8 @@ export const createPool = (b: CreatePoolDto) => api.post(`/pools`, b).then((r) =
 export const updatePool = (id: string, b: UpdatePoolDto) => api.patch(`/pools/${id}`, b).then((r) => r.data);
 export const archivePool = (id: string) => api.post(`/pools/${id}/archive`).then((r) => r.data);
 
-export const listSwimmers = (poolId: string) =>
-  api.get<SwimmerListItem[]>(`/pools/${poolId}/swimmers`).then((r) => r.data);
+export const listSwimmers = (poolId: string, page = 1) =>
+  api.get<Paginated<SwimmerListItem>>(`/pools/${poolId}/swimmers`, { params: { page } }).then((r) => r.data);
 export const createSwimmer = (poolId: string, b: CreateSwimmerDto) =>
   api.post<SwimmerListItem>(`/pools/${poolId}/swimmers`, b).then((r) => r.data);
 export const setMembership = (poolId: string, sid: string, b: UpdateMembershipDto) =>

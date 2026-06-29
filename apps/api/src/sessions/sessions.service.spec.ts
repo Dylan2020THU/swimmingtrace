@@ -39,3 +39,18 @@ describe('SessionsService.create', () => {
     expect(prisma.swimSession.create).toHaveBeenCalled();
   });
 });
+
+describe('SessionsService.listForSwimmer', () => {
+  it('返回分页信封 {items,total,page,pageSize}，skip 由 page/pageSize 计算', async () => {
+    const prisma: any = {
+      swimSession: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'ss1', distanceMeters: 800, swamAt: new Date('2026-02-01') }]),
+        count: jest.fn().mockResolvedValue(1),
+      },
+    };
+    const res = await new SessionsService(prisma).listForSwimmer('s1', 2, 5);
+    expect(prisma.swimSession.findMany).toHaveBeenCalledWith(expect.objectContaining({ skip: 5, take: 5 }));
+    expect(res).toMatchObject({ total: 1, page: 2, pageSize: 5 });
+    expect(res.items).toHaveLength(1);
+  });
+});

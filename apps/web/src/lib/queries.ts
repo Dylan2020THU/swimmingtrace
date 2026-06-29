@@ -44,8 +44,8 @@ export function useDeleteChallenge(poolId: string) {
 export const usePools = (includeArchived = false) =>
   useQuery({ queryKey: [...queryKeys.pools, includeArchived], queryFn: () => ep.listPools(includeArchived) });
 export const usePool = (id: string) => useQuery({ queryKey: queryKeys.pool(id), queryFn: () => ep.getPool(id) });
-export const useSwimmers = (poolId: string) =>
-  useQuery({ queryKey: queryKeys.swimmers(poolId), queryFn: () => ep.listSwimmers(poolId) });
+export const useSwimmers = (poolId: string, page = 1) =>
+  useQuery({ queryKey: [...queryKeys.swimmers(poolId), page], queryFn: () => ep.listSwimmers(poolId, page) });
 export const useOverview = () => useQuery({ queryKey: queryKeys.overview, queryFn: ep.getOverview });
 export const usePoolStats = (id: string) => useQuery({ queryKey: queryKeys.poolStats(id), queryFn: () => ep.getPoolStats(id) });
 export const useSwimmerStats = (sid: string) =>
