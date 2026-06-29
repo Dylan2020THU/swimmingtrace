@@ -84,6 +84,9 @@ export interface SwimmerStats {
   heatmap: HeatmapCell[];
 }
 
+// pagination — offset-paginated list envelope
+export interface Paginated<T> { items: T[]; total: number; page: number; pageSize: number; }
+
 // platform — uniform error envelope returned by the global exception filter for ALL errors
 export interface ApiErrorResponse {
   statusCode: number;
