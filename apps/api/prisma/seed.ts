@@ -50,6 +50,8 @@ async function main() {
   if (existingIds.length) {
     await prisma.swimSession.deleteMany({ where: { swimmerId: { in: existingIds } } });
     await prisma.registration.deleteMany({ where: { swimmerId: { in: existingIds } } });
+    // Challenges reference the owner's pools — clear them before the pools (FK).
+    await prisma.challenge.deleteMany({ where: { pool: { owner: { email: OWNER_EMAIL } } } });
     await prisma.pool.deleteMany({ where: { owner: { email: OWNER_EMAIL } } });
     await prisma.user.deleteMany({ where: { id: { in: existingIds } } });
   }
