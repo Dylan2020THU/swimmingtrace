@@ -89,7 +89,7 @@ npm run dev
 | `POST /auth/verify-email` · `POST /auth/resend-verification` | 验证邮箱 / 重发验证邮件（**软门禁**）|
 | `GET /pools?includeArchived=` · `POST /pools` | 列出 / 新建泳池 |
 | `GET /pools/:id` · `PATCH /pools/:id` · `POST /pools/:id/archive` | 详情 / 编辑 / 归档（软删） |
-| `GET /pools/:id/swimmers` · `POST /pools/:id/swimmers` | 名册 / 新建会员（邮箱已存在则复用） |
+| `GET /pools/:id/swimmers` · `POST /pools/:id/swimmers` | 名册（**分页**：`?page=&pageSize=`，返回 `{items,total,page,pageSize}`）/ 新建会员（邮箱已存在则复用） |
 | `PATCH /pools/:id/swimmers/:sid` | 停用 / 恢复会员 |
 | `POST /pools/:id/swimmers/:sid/sessions` | **代录**一次游泳 |
 | `GET /stats/overview` · `GET /stats/pool/:id` · `GET /stats/swimmer/:sid` | 跨泳池 / 单泳池 / 单游泳者看板 |
@@ -132,7 +132,7 @@ e2e 覆盖关键鉴权/所有权链路（owner 越权 → 403）与"建会员 + 
 自录数据按 `poolId` 进入 owner 的单泳池看板（录入时校验本人在该池 ACTIVE 登记）。设计见
 [`docs/superpowers/specs/2026-06-27-swimmer-self-service-claim-design.md`](docs/superpowers/specs/2026-06-27-swimmer-self-service-claim-design.md)。
 
-**游泳者端接口**：`GET /auth/claim/:token`、`POST /auth/claim`（公开，限流）；`GET /me/pools`、`POST /sessions`、`GET /sessions/me`、`GET /stats/summary`、`GET /stats/heatmap`（`@Roles(SWIMMER)`）。owner 侧 `POST /pools/:id/swimmers/:sid/claim-link`。
+**游泳者端接口**：`GET /auth/claim/:token`、`POST /auth/claim`（公开，限流）；`GET /me/pools`、`POST /sessions`、`GET /sessions/me`（**分页** `?page=&pageSize=`，返回 `{items,total,page,pageSize}`）、`GET /stats/summary`、`GET /stats/heatmap`（`@Roles(SWIMMER)`）。owner 侧 `POST /pools/:id/swimmers/:sid/claim-link`。
 
 ## 挑战与排行榜（Phase 2-B）
 
