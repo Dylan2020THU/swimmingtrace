@@ -191,6 +191,8 @@ npm run prod:down    # 停止并清理
 
 - **结构化日志**：`nestjs-pino`——生产输出 JSON、开发 pretty；`LOG_LEVEL` 可调；`Authorization` / `Cookie` 自动脱敏；`/health*` 降为 debug 避免刷屏。
 - **请求关联**：每个请求带 `x-request-id`（回显入站值或生成），贯穿日志行、错误信封与响应头——排错时用它串起一次请求的全部日志。
+- **Prometheus 指标**：`GET /metrics`（public、免限流，可被 Prometheus 抓取）暴露默认进程指标（CPU/内存/事件循环/GC）与 HTTP 指标——`http_requests_total`、`http_request_duration_seconds`（标签 `method`/`route`/`status_code`，用路由模板避免标签爆炸）。`METRICS_ENABLED=false` 关闭；生产建议用网络策略限制抓取来源。
+- **审计轨迹**：每个**改动型请求**（POST/PATCH/PUT/DELETE）在完成时输出结构化审计日志 `{ audit:true, actor, action, status, requestId, durationMs }`——谁、做了什么、结果如何，便于安全审计与合规检索。
 - **统一错误信封**：所有错误返回 `{ statusCode, error, message, requestId, timestamp, path }`（类型见 `@swim/shared` 的 `ApiErrorResponse`）；5xx 堆栈只进日志、不进响应体。
 - **安全头 / 压缩**：`helmet` + `compression`。**优雅关闭**：`SIGTERM/SIGINT` → Prisma 断连。
 

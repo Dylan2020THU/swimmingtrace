@@ -76,5 +76,6 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
     REFRESH_TOKEN_TTL: refreshTtl,
     MAIL_FROM: mailFrom,
     PASSWORD_RESET_TTL: resetTtl,
+    METRICS_ENABLED: (config.METRICS_ENABLED as string) ?? 'true',
   };
 }

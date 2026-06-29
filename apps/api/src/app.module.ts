@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
@@ -7,6 +7,8 @@ import { PrismaService } from './prisma.service';
 import { validateEnv } from './common/env.validation';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { IdempotencyInterceptor } from './common/idempotency/idempotency.interceptor';
+import { ObservabilityMiddleware } from './common/observability/observability.middleware';
+import { MetricsModule } from './metrics/metrics.module';
 import { genReqId } from './common/logging/req-id';
 import { AuthModule } from './auth/auth.module';
 import { PoolsModule } from './pools/pools.module';
@@ -50,6 +52,7 @@ import { HealthModule } from './health/health.module';
     MeModule,
     ChallengesModule,
     HealthModule,
+    MetricsModule,
   ],
   providers: [
     PrismaService,
@@ -59,4 +62,9 @@ import { HealthModule } from './health/health.module';
   ],
   exports: [PrismaService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    // Records HTTP metrics + emits audit logs for every request, on response finish.
+    consumer.apply(ObservabilityMiddleware).forRoutes('*');
+  }
+}
