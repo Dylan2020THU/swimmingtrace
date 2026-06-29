@@ -4,6 +4,7 @@ import { IsDateString, IsInt, IsString, Min } from 'class-validator';
 import { PrismaService } from '../prisma.service';
 import { ActiveChallengeItem, ChallengeDetail, ChallengeSummary, CreateChallengeDto, LeaderboardRow } from '@swim/shared';
 import { assertOwnsChallenge, assertOwnsPool } from '../common/ownership';
+import { BillingService } from '../billing/billing.service';
 
 export class CreateChallengeBody implements CreateChallengeDto {
   @IsString() name: string;
@@ -14,9 +15,13 @@ export class CreateChallengeBody implements CreateChallengeDto {
 
 @Injectable()
 export class ChallengesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private billing: BillingService,
+  ) {}
 
   async create(ownerId: string, poolId: string, dto: CreateChallengeDto) {
+    await this.billing.assertFeature(ownerId, 'challenges');
     await assertOwnsPool(this.prisma, ownerId, poolId);
     const start = new Date(dto.startDate);
     const end = new Date(dto.endDate);

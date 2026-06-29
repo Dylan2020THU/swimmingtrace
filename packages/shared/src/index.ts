@@ -102,6 +102,16 @@ export interface AccountExport {
 }
 export interface DeleteAccountDto { password: string; }
 
+// billing — owner subscription plan (internal Free/Pro; quota + feature gating)
+export type Plan = 'FREE' | 'PRO';
+export interface PlanInfo {
+  plan: Plan;
+  limits: { maxPools: number; maxMembers: number };
+  usage: { pools: number; members: number };
+  features: { export: boolean; challenges: boolean };
+}
+export interface SetPlanDto { plan: Plan; }
+
 // platform — uniform error envelope returned by the global exception filter for ALL errors
 export interface ApiErrorResponse {
   statusCode: number;

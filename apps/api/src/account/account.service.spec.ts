@@ -3,6 +3,8 @@ import * as bcrypt from 'bcrypt';
 import { UnauthorizedException } from '@nestjs/common';
 import { AccountService } from './account.service';
 
+const mkBilling = () => ({ assertFeature: jest.fn().mockResolvedValue(undefined) }) as any;
+
 describe('AccountService.exportData', () => {
   it('组装账号 + 池图，日期转 ISO', async () => {
     const prisma: any = {
@@ -29,7 +31,7 @@ describe('AccountService.exportData', () => {
         ]),
       },
     };
-    const out = await new AccountService(prisma).exportData('o1');
+    const out = await new AccountService(prisma, mkBilling()).exportData('o1');
     expect(out.account).toMatchObject({ id: 'o1', email: 'o@x.com', role: 'OWNER' });
     expect(out.account.createdAt).toBe('2026-01-01T00:00:00.000Z');
     expect(out.pools[0].swimmers[0]).toMatchObject({ swimmerId: 's1', email: 's@x.com', status: 'ACTIVE' });
@@ -46,7 +48,7 @@ describe('AccountService.deleteAccount', () => {
       user: { findUnique: jest.fn().mockResolvedValue({ id: 'o1', passwordHash: 'H' }) },
       $transaction: jest.fn(),
     };
-    await expect(new AccountService(prisma).deleteAccount('o1', 'wrong')).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(new AccountService(prisma, mkBilling()).deleteAccount('o1', 'wrong')).rejects.toBeInstanceOf(UnauthorizedException);
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
@@ -60,7 +62,7 @@ describe('AccountService.deleteAccount', () => {
       registration: { deleteMany: jest.fn() },
       $transaction: jest.fn().mockResolvedValue([]),
     };
-    const res = await new AccountService(prisma).deleteAccount('o1', 'right');
+    const res = await new AccountService(prisma, mkBilling()).deleteAccount('o1', 'right');
     expect(res).toEqual({ ok: true });
     expect(prisma.swimSession.deleteMany).toHaveBeenCalledWith({ where: { poolId: { in: ['p1', 'p2'] } } });
     expect(prisma.challenge.deleteMany).toHaveBeenCalledWith({ where: { poolId: { in: ['p1', 'p2'] } } });

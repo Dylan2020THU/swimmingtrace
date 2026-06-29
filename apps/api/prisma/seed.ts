@@ -60,6 +60,7 @@ async function main() {
       email: OWNER_EMAIL,
       name: '示例泳池主',
       role: 'OWNER',
+      plan: 'PRO', // 演示账号给 Pro，便于展示两档与功能门禁
       passwordHash: await bcrypt.hash(OWNER_PASSWORD, 12),
     },
   });
