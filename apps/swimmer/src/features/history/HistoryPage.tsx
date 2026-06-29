@@ -27,7 +27,7 @@ export function HistoryPage() {
           </List>
           {q.hasNextPage && (
             <div style={{ padding: 12, textAlign: 'center' }}>
-              <Button block loading={q.isFetchingNextPage} onClick={() => q.fetchNextPage()}>
+              <Button block loading={q.isFetchingNextPage} onClick={() => { q.fetchNextPage(); }}>
                 加载更多
               </Button>
             </div>
