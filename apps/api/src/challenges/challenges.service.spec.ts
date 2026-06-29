@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ChallengesService } from './challenges.service';
 
 const okDto = { name: 'C', goalDistanceMeters: 100000, startDate: '2026-06-01', endDate: '2026-07-01' };
+const mkBilling = () => ({ assertFeature: jest.fn().mockResolvedValue(undefined) }) as any;
 
 describe('ChallengesService.create', () => {
   it('校验所有权后创建', async () => {
@@ -9,7 +10,7 @@ describe('ChallengesService.create', () => {
       pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
       challenge: { create: jest.fn().mockResolvedValue({ id: 'c1' }) },
     };
-    await new ChallengesService(prisma).create('o1', 'p1', okDto);
+    await new ChallengesService(prisma, mkBilling()).create('o1', 'p1', okDto);
     expect(prisma.challenge.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ poolId: 'p1', name: 'C', goalDistanceMeters: 100000 }) }),
     );
@@ -20,7 +21,7 @@ describe('ChallengesService.create', () => {
       pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
       challenge: { create: jest.fn() },
     };
-    await expect(new ChallengesService(prisma).create('o1', 'p1', { ...okDto, endDate: '2026-06-01' })).rejects.toBeInstanceOf(
+    await expect(new ChallengesService(prisma, mkBilling()).create('o1', 'p1', { ...okDto, endDate: '2026-06-01' })).rejects.toBeInstanceOf(
       BadRequestException,
     );
     expect(prisma.challenge.create).not.toHaveBeenCalled();
@@ -31,7 +32,7 @@ describe('ChallengesService.create', () => {
       pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'other', archivedAt: null }) },
       challenge: { create: jest.fn() },
     };
-    await expect(new ChallengesService(prisma).create('o1', 'p1', okDto)).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(new ChallengesService(prisma, mkBilling()).create('o1', 'p1', okDto)).rejects.toBeInstanceOf(ForbiddenException);
   });
 });
 
@@ -46,7 +47,7 @@ describe('ChallengesService.listForPool', () => {
       },
       swimSession: { aggregate: jest.fn().mockResolvedValue({ _sum: { distanceMeters: 42000 } }) },
     };
-    const res = await new ChallengesService(prisma).listForPool('o1', 'p1');
+    const res = await new ChallengesService(prisma, mkBilling()).listForPool('o1', 'p1');
     expect(res[0]).toMatchObject({ id: 'c1', goalDistanceMeters: 100000, totalDistanceMeters: 42000 });
   });
 });
@@ -64,7 +65,7 @@ describe('ChallengesService.detail', () => {
         { swimmerId: 's2', name: 'B', email: 'b@x', distanceMeters: BigInt(3000) },
       ]),
     };
-    const res = await new ChallengesService(prisma).detail('o1', 'c1');
+    const res = await new ChallengesService(prisma, mkBilling()).detail('o1', 'c1');
     expect(res.leaderboard[0]).toEqual({ swimmerId: 's1', name: 'A', email: 'a@x', distanceMeters: 5000 });
     expect(res.leaderboard[1].distanceMeters).toBe(3000);
     expect(res.totalDistanceMeters).toBe(8000);
@@ -74,7 +75,7 @@ describe('ChallengesService.detail', () => {
     const prisma: any = {
       challenge: { findUnique: jest.fn().mockResolvedValue({ id: 'c1', poolId: 'p1', pool: { ownerId: 'other' } }) },
     };
-    await expect(new ChallengesService(prisma).detail('o1', 'c1')).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(new ChallengesService(prisma, mkBilling()).detail('o1', 'c1')).rejects.toBeInstanceOf(ForbiddenException);
   });
 });
 
@@ -93,13 +94,13 @@ describe('ChallengesService.activeForOwner', () => {
       },
       swimSession: { aggregate: jest.fn().mockResolvedValue({ _sum: { distanceMeters: 4200 } }) },
     };
-    const res = await new ChallengesService(prisma).activeForOwner('o1');
+    const res = await new ChallengesService(prisma, mkBilling()).activeForOwner('o1');
     expect(prisma.pool.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { ownerId: 'o1', archivedAt: null } }));
     expect(res[0]).toMatchObject({ id: 'c1', poolName: '晨曦', totalDistanceMeters: 4200 });
   });
 
   it('无泳池 → 空数组', async () => {
     const prisma: any = { pool: { findMany: jest.fn().mockResolvedValue([]) } };
-    expect(await new ChallengesService(prisma).activeForOwner('o1')).toEqual([]);
+    expect(await new ChallengesService(prisma, mkBilling()).activeForOwner('o1')).toEqual([]);
   });
 });

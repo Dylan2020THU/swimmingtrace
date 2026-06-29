@@ -1,6 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CreatePoolDto, UpdatePoolDto, CreateSwimmerDto, UpdateMembershipDto, CreateSessionDto, CreateChallengeDto } from '@swim/shared';
+import type { CreatePoolDto, UpdatePoolDto, CreateSwimmerDto, UpdateMembershipDto, CreateSessionDto, CreateChallengeDto, Plan } from '@swim/shared';
 import * as ep from './api/endpoints';
+
+export const usePlan = () => useQuery({ queryKey: ['plan'], queryFn: ep.getPlan });
+export function useSetPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (plan: Plan) => ep.setPlan(plan),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plan'] }),
+  });
+}
 
 export const queryKeys = {
   pools: ['pools'] as const,

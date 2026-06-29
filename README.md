@@ -93,6 +93,7 @@ npm run dev
 | `PATCH /pools/:id/swimmers/:sid` | 停用 / 恢复会员 |
 | `POST /pools/:id/swimmers/:sid/sessions` | **代录**一次游泳 |
 | `GET /stats/overview` · `GET /stats/pool/:id` · `GET /stats/swimmer/:sid` | 跨泳池 / 单泳池 / 单游泳者看板 |
+| `GET /account/plan` · `POST /account/plan` | 当前计划（用量/上限/功能）/ 自助升级降级（Free↔Pro，无支付） |
 | `GET /account/export` · `DELETE /account` | 导出本账号全部数据（JSON）/ 密码确认删除账号及名下全部数据 |
 | `GET /health` · `GET /health/ready` | 存活 / 就绪探针（**公开**、免鉴权免限流）|
 | `GET /metrics` | Prometheus 指标（**公开**、免限流；生产用网络策略限制）|
@@ -107,6 +108,7 @@ npm run dev
 - **幂等键**：认证的**创建型 POST** 可带 `Idempotency-Key` 头安全重放——首次执行落库（状态码 + 响应体，按 `userId` 作用域），同 key 重放直接返回原响应（不重复副作用），同 key 异载荷 → `422`，并发/进行中同 key → `409`，handler 失败则释放 key 允许重试。全局 `IdempotencyInterceptor` 实现；两端 session 自录/代录请求已自动携带该头（弱网/单飞续期重发不会把一次游泳记成两次）。
 - **看板热力图**：按 `APP_TIMEZONE`（默认 UTC）在 SQL 内按日聚合并格式化为 `YYYY-MM-DD`。
 - **数据与合规**：owner 自助**数据导出**（`GET /account/export` → 账号 + 名下泳池/会员/记录/挑战 的完整 JSON）与**账号删除**（`DELETE /account`，密码二次确认 → 事务级联删名下全部业务数据与账号；refresh/idempotency 经 FK 级联清除）。会员是独立账号，owner 删除仅移除其在本租户池的数据，不删其账号。控制台「账号与数据」页提供入口。
+- **计划与计费**：Owner 即租户，订阅 **Free / Pro** 两档（限额写代码配置 `PLAN_LIMITS`）。服务端强制**配额**（Free：1 泳池 / 25 会员）与**功能门禁**（数据导出、挑战赛为 Pro）；超限/无权返回 **HTTP 402** + 可读 message。owner 在控制台「账号与数据 › 计划」**自助升降级**（`POST /account/plan`，翻计划即生效——真支付为未来 seam）。降级**祖父化**：既有数据保留，低于上限前不能新建。
 
 ## API 文档
 

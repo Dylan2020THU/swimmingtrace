@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { IsDateString, IsEmail, IsEnum, IsInt, IsLatitude, IsLongitude, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { PrismaService } from '../prisma.service';
 import { MailService } from '../mail/mail.service';
+import { BillingService } from '../billing/billing.service';
 import { ClaimLinkResponse, CreateSessionDto, Paginated, PoolDetail, PoolSummary, SwimmerListItem } from '@swim/shared';
 import { assertOwnsPool } from '../common/ownership';
 import { paginate } from '../common/pagination';
@@ -51,6 +52,7 @@ export class PoolsService {
     private prisma: PrismaService,
     private config: ConfigService,
     private mail: MailService,
+    private billing: BillingService,
   ) {}
 
   async listMyPools(ownerId: string, includeArchived = false): Promise<PoolSummary[]> {
@@ -77,7 +79,8 @@ export class PoolsService {
     );
   }
 
-  createPool(ownerId: string, dto: CreatePoolDto) {
+  async createPool(ownerId: string, dto: CreatePoolDto) {
+    await this.billing.assertCanCreatePool(ownerId);
     return this.prisma.pool.create({ data: { ...dto, ownerId } });
   }
 
@@ -156,6 +159,7 @@ export class PoolsService {
 
   async createSwimmer(ownerId: string, poolId: string, dto: CreateSwimmerDto): Promise<SwimmerListItem> {
     await assertOwnsPool(this.prisma, ownerId, poolId);
+    await this.billing.assertCanAddMember(ownerId);
     let user = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (!user) {
       const passwordHash = await bcrypt.hash(randomBytes(24).toString('hex'), 12);

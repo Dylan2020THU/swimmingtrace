@@ -32,6 +32,7 @@ describe('Account export & deletion (e2e)', () => {
     const owner = (
       await request(srv()).post('/auth/register').send({ email: 'acc-o@x.com', password: 'ownerpw123', role: 'OWNER' })
     ).body.accessToken;
+    await prisma.user.update({ where: { email: 'acc-o@x.com' }, data: { plan: 'PRO' } }); // 导出 + 挑战为 Pro 功能
     const pool = await request(srv()).post('/pools').set('Authorization', `Bearer ${owner}`).send({ name: 'AccPool' }).expect(201);
     const sw = await request(srv())
       .post(`/pools/${pool.body.id}/swimmers`).set('Authorization', `Bearer ${owner}`)

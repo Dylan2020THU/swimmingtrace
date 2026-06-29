@@ -32,6 +32,7 @@ describe('Challenges & leaderboard (e2e)', () => {
 
   it('建挑战→代录→排行榜/进度正确，游泳者看到自己的名次，越权 403', async () => {
     const owner = (await regOwner('o@x.com')).body.accessToken;
+    await prisma.user.update({ where: { email: 'o@x.com' }, data: { plan: 'PRO' } }); // 挑战赛为 Pro 功能
     const oh = { Authorization: `Bearer ${owner}` };
     const pool = await request(srv()).post('/pools').set(oh).send({ name: 'P' }).expect(201);
 
@@ -89,6 +90,7 @@ describe('Challenges & leaderboard (e2e)', () => {
 
   it('endDate<=startDate → 400', async () => {
     const owner = (await regOwner('o3@x.com')).body.accessToken;
+    await prisma.user.update({ where: { email: 'o3@x.com' }, data: { plan: 'PRO' } }); // 挑战赛为 Pro 功能
     const oh = { Authorization: `Bearer ${owner}` };
     const pool = await request(srv()).post('/pools').set(oh).send({ name: 'Q' }).expect(201);
     await request(srv()).post(`/pools/${pool.body.id}/challenges`).set(oh)

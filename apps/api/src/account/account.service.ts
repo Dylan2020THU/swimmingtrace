@@ -3,6 +3,7 @@ import { IsString, MinLength } from 'class-validator';
 import * as bcrypt from 'bcrypt';
 import { AccountExport } from '@swim/shared';
 import { PrismaService } from '../prisma.service';
+import { BillingService } from '../billing/billing.service';
 
 export class DeleteAccountDto {
   @IsString()
@@ -12,10 +13,14 @@ export class DeleteAccountDto {
 
 @Injectable()
 export class AccountService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private billing: BillingService,
+  ) {}
 
   /** GDPR-style portability: the owner's full data graph as serialisable JSON. */
   async exportData(ownerId: string): Promise<AccountExport> {
+    await this.billing.assertFeature(ownerId, 'export');
     const account = await this.prisma.user.findUniqueOrThrow({ where: { id: ownerId } });
     const pools = await this.prisma.pool.findMany({
       where: { ownerId },

@@ -23,12 +23,19 @@ enum RegistrationStatus {
   INACTIVE
 }
 
+enum Plan {
+  FREE
+  PRO
+}
+
 model User {
   id            String         @id @default(uuid())
   email         String         @unique
   passwordHash  String
   name          String?
   role          Role           @default(SWIMMER)
+  plan          Plan           @default(FREE)
+  planUpdatedAt DateTime?
   ownedPools    Pool[]         @relation("PoolOwner")
   registrations Registration[]
   sessions      SwimSession[]
