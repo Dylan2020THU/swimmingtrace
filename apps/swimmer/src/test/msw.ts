@@ -7,7 +7,7 @@ export const handlers = [
   http.get('/api/me/pools', () => HttpResponse.json([])),
   http.get('/api/me/challenges', () => HttpResponse.json([])),
   http.get('/api/places/nearby', () => HttpResponse.json([])),
-  http.get('/api/sessions/me', () => HttpResponse.json([])),
+  http.get('/api/sessions/me', () => HttpResponse.json({ items: [], total: 0, page: 1, pageSize: 20 })),
   http.get('/api/stats/summary', () =>
     HttpResponse.json({ totalDistanceMeters: 0, totalDurationSeconds: 0, sessionCount: 0 }),
   ),

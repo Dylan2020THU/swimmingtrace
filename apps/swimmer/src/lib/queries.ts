@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CreateSessionDto } from '@swim/shared';
 import * as ep from './api/endpoints';
 
@@ -23,7 +23,13 @@ export const useMyPools = () => useQuery({ queryKey: queryKeys.myPools, queryFn:
 export const useMySummary = () => useQuery({ queryKey: queryKeys.mySummary, queryFn: ep.getMySummary });
 export const useMyHeatmap = (year: number) =>
   useQuery({ queryKey: queryKeys.myHeatmap(year), queryFn: () => ep.getMyHeatmap(year) });
-export const useMySessions = () => useQuery({ queryKey: queryKeys.mySessions, queryFn: ep.getMySessions });
+export const useMySessions = () =>
+  useInfiniteQuery({
+    queryKey: queryKeys.mySessions,
+    queryFn: ({ pageParam }) => ep.getMySessions(pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.page * last.pageSize < last.total ? last.page + 1 : undefined),
+  });
 
 export function useRecordSession() {
   const qc = useQueryClient();

@@ -1,7 +1,7 @@
 import { api } from './client';
 import type {
   LoginResponse, MeResponse, ClaimInfoResponse, ClaimAccountDto,
-  MyPoolItem, CreateSessionDto, SwimSessionItem, HeatmapCell, SwimmerStats, MyChallengeItem, NearbyPlace,
+  MyPoolItem, CreateSessionDto, SwimSessionItem, HeatmapCell, SwimmerStats, MyChallengeItem, NearbyPlace, Paginated,
 } from '@swim/shared';
 
 export const login = (b: { email: string; password: string }) =>
@@ -21,7 +21,8 @@ export const resetPassword = (token: string, password: string) =>
 
 export const getMyPools = () => api.get<MyPoolItem[]>('/me/pools').then((r) => r.data);
 export const recordMySession = (b: CreateSessionDto) => api.post('/sessions', b).then((r) => r.data);
-export const getMySessions = () => api.get<SwimSessionItem[]>('/sessions/me').then((r) => r.data);
+export const getMySessions = (page = 1) =>
+  api.get<Paginated<SwimSessionItem>>('/sessions/me', { params: { page } }).then((r) => r.data);
 export const getMySummary = () =>
   api.get<SwimmerStats['summary']>('/stats/summary').then((r) => r.data);
 export const getMyHeatmap = (year?: number) =>
