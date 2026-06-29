@@ -56,7 +56,14 @@ export function AppLayout() {
       )}
       <Layout>
         <Layout.Sider theme="light" width={180}>
-          <Menu mode="inline" selectable={false} items={[{ key: 'overview', label: '总览', onClick: () => navigate('/pools') }]} />
+          <Menu
+            mode="inline"
+            selectable={false}
+            items={[
+              { key: 'overview', label: '总览', onClick: () => navigate('/pools') },
+              { key: 'account', label: '账号与数据', onClick: () => navigate('/account') },
+            ]}
+          />
         </Layout.Sider>
         <Layout.Content style={{ padding: 24 }}><Outlet /></Layout.Content>
       </Layout>
