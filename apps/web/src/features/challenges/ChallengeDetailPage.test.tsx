@@ -27,8 +27,8 @@ it('排行榜展示性别/年龄组/次数/里程占比 + 个人泳迹图按钮'
   expect(await screen.findByText('Ada')).toBeInTheDocument();
   expect(screen.getByText('女')).toBeInTheDocument();
   expect(screen.getByText('男')).toBeInTheDocument();
-  expect(screen.getByText('15-17')).toBeInTheDocument(); // Ada, born 2011 → 15 today
-  expect(screen.getByText('13-14')).toBeInTheDocument(); // Ben, born 2012
+  expect(screen.getByText('15至18岁')).toBeInTheDocument(); // Ada, born 2011 → 15 today
+  expect(screen.getByText('9至14岁')).toBeInTheDocument(); // Ben, born 2012 → 14 today
   expect(screen.getByText('60%')).toBeInTheDocument(); // 6000 / 10000
   expect(screen.getByText('40%')).toBeInTheDocument();
   expect(screen.getAllByRole('button', { name: /个人泳迹图/ })).toHaveLength(2);

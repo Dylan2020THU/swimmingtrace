@@ -10,7 +10,7 @@ it('展示赛会纪录板（项目/保持人/成绩）', async () => {
   server.use(
     http.get('/api/records', () =>
       HttpResponse.json([
-        { distanceMeters: 50, stroke: 'FREE', gender: 'MALE', ageGroup: '13-14', swimmerId: 'a', name: 'Ada', timeMs: 30000, meetName: '夏季赛', meetDate: '2026-02-01T00:00:00.000Z' },
+        { distanceMeters: 50, stroke: 'FREE', gender: 'MALE', ageGroup: '9至14岁', swimmerId: 'a', name: 'Ada', timeMs: 30000, meetName: '夏季赛', meetDate: '2026-02-01T00:00:00.000Z' },
       ])),
   );
   renderWithProviders(<Routes><Route path="/records" element={<RecordsPage />} /></Routes>, { route: '/records' });

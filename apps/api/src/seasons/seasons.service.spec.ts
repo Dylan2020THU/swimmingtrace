@@ -41,7 +41,7 @@ describe('SeasonsService', () => {
     };
     const out = await new SeasonsService(prisma, mkBilling()).seasonDetail('o1', 's1');
     expect(out).toMatchObject({ id: 's1', meetCount: 1 });
-    expect(out.standings[0]).toMatchObject({ gender: 'MALE', ageGroup: '13-14' });
+    expect(out.standings[0]).toMatchObject({ gender: 'MALE', ageGroup: '9至14岁' });
     expect(out.standings[0].rows.map((r) => [r.swimmerId, r.points])).toEqual([
       ['a', 9],
       ['b', 7],
@@ -84,6 +84,6 @@ describe('SeasonsService', () => {
     };
     const recs = await new SeasonsService(prisma, mkBilling()).clubRecordsOf('o1');
     expect(recs).toHaveLength(1);
-    expect(recs[0]).toMatchObject({ distanceMeters: 50, stroke: 'FREE', gender: 'MALE', ageGroup: '13-14', swimmerId: 'a', timeMs: 30000 });
+    expect(recs[0]).toMatchObject({ distanceMeters: 50, stroke: 'FREE', gender: 'MALE', ageGroup: '9至14岁', swimmerId: 'a', timeMs: 30000 });
   });
 });

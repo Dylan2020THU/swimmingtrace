@@ -13,9 +13,9 @@ const render = () =>
 it('公开赛季页展示积分榜 + 纪录板', async () => {
   server.use(
     http.get('/api/public/seasons/s1', () =>
-      HttpResponse.json({ id: 's1', name: '2026春季系列赛', standings: [{ gender: 'MALE', ageGroup: '13-14', rows: [{ rank: 1, swimmerId: 'a', name: 'Ada', points: 18 }] }] })),
+      HttpResponse.json({ id: 's1', name: '2026春季系列赛', standings: [{ gender: 'MALE', ageGroup: '9至14岁', rows: [{ rank: 1, swimmerId: 'a', name: 'Ada', points: 18 }] }] })),
     http.get('/api/public/seasons/s1/records', () =>
-      HttpResponse.json([{ distanceMeters: 50, stroke: 'FREE', gender: 'MALE', ageGroup: '13-14', swimmerId: 'a', name: 'Ada', timeMs: 30000, meetName: '夏季赛', meetDate: '2026-02-01T00:00:00.000Z' }])),
+      HttpResponse.json([{ distanceMeters: 50, stroke: 'FREE', gender: 'MALE', ageGroup: '9至14岁', swimmerId: 'a', name: 'Ada', timeMs: 30000, meetName: '夏季赛', meetDate: '2026-02-01T00:00:00.000Z' }])),
   );
   render();
   expect(await screen.findByText('2026春季系列赛')).toBeInTheDocument();

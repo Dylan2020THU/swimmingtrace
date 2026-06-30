@@ -19,7 +19,7 @@ it('选项目后展示按性别/年龄组的排行榜（金银名次）', async 
     http.get('/api/events/e1/standings', () =>
       HttpResponse.json([
         {
-          gender: 'MALE', ageGroup: '13-14',
+          gender: 'MALE', ageGroup: '9至14岁',
           rows: [
             { rank: 1, medal: 'gold', swimmerId: 'a', name: 'Sam', resultTimeMs: 30000, resultStatus: 'OK' },
             { rank: 2, medal: 'silver', swimmerId: 'b', name: 'Bob', resultTimeMs: 31000, resultStatus: 'OK' },
@@ -31,7 +31,7 @@ it('选项目后展示按性别/年龄组的排行榜（金银名次）', async 
   renderWithProviders(<Routes><Route path="/meets/:meetId" element={<MeetDetailPage />} /></Routes>, { route: '/meets/m1' });
 
   await userEvent.click(await screen.findByRole('button', { name: /50m 自由泳/ }));
-  expect(await screen.findByText('男 · 13-14')).toBeInTheDocument();
+  expect(await screen.findByText('男 · 9至14岁')).toBeInTheDocument();
   expect(screen.getByText('Sam')).toBeInTheDocument();
   expect(screen.getByText('Bob')).toBeInTheDocument();
   expect(screen.getByText(/金 1/)).toBeInTheDocument();

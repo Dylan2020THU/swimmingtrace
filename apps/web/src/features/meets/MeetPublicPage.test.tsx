@@ -17,7 +17,7 @@ it('公开页：渲染赛程，选项目看出发名单与成绩', async () => {
       })),
     http.get('/api/public/events/e1/startlist', () => HttpResponse.json([{ heat: 1, entries: [{ lane: 3, name: 'Sam', seedTimeMs: 28760 }] }])),
     http.get('/api/public/events/e1/results', () =>
-      HttpResponse.json([{ gender: 'MALE', ageGroup: '13-14', rows: [{ rank: 1, medal: 'gold', swimmerId: 'a', name: 'Sam', resultTimeMs: 28760, resultStatus: 'OK' }] }])),
+      HttpResponse.json([{ gender: 'MALE', ageGroup: '9至14岁', rows: [{ rank: 1, medal: 'gold', swimmerId: 'a', name: 'Sam', resultTimeMs: 28760, resultStatus: 'OK' }] }])),
   );
 
   renderWithProviders(<Routes><Route path="/p/meets/:meetId" element={<MeetPublicPage />} /></Routes>, { route: '/p/meets/m1' });

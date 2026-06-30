@@ -62,15 +62,15 @@ describe('Meets E5 records & season points (e2e)', () => {
     // Season points: A wins both (9+9=18), B second both (7+7=14).
     const detail = (await auth(request(srv()).get(`/seasons/${season.id}`)).expect(200)).body;
     expect(detail.meetCount).toBe(2);
-    const grp = detail.standings.find((g: any) => g.gender === 'MALE' && g.ageGroup === '13-14');
+    const grp = detail.standings.find((g: any) => g.gender === 'MALE' && g.ageGroup === '9至14岁');
     expect(grp.rows.map((r: any) => [r.swimmerId, r.points, r.rank])).toEqual([
       [a, 18, 1],
       [b, 14, 2],
     ]);
 
-    // Club records: 50 FREE MALE 13-14 held by A at 30000 (fastest across both meets).
+    // Club records: 50 FREE MALE 9至14岁 held by A at 30000 (fastest across both meets).
     const records = (await auth(request(srv()).get('/records')).expect(200)).body;
-    const rec = records.find((r: any) => r.distanceMeters === 50 && r.stroke === 'FREE' && r.gender === 'MALE' && r.ageGroup === '13-14');
+    const rec = records.find((r: any) => r.distanceMeters === 50 && r.stroke === 'FREE' && r.gender === 'MALE' && r.ageGroup === '9至14岁');
     expect(rec).toMatchObject({ swimmerId: a, timeMs: 30000 });
 
     // Ada claims her account → /me/records shows PB 30000 flagged as a club record.
@@ -85,7 +85,7 @@ describe('Meets E5 records & season points (e2e)', () => {
     await auth(request(srv()).post(`/seasons/${season.id}/publish`).send({ published: true })).expect(200);
     const pub = await request(srv()).get(`/public/seasons/${season.id}`).expect(200);
     expect(pub.body).toMatchObject({ id: season.id, name: '2026 春季系列赛' });
-    expect(pub.body.standings.find((g: any) => g.ageGroup === '13-14').rows[0]).toMatchObject({ points: 18 });
+    expect(pub.body.standings.find((g: any) => g.ageGroup === '9至14岁').rows[0]).toMatchObject({ points: 18 });
     expect(JSON.stringify(pub.body)).not.toContain('@'); // no email
 
     const pubRecords = await request(srv()).get(`/public/seasons/${season.id}/records`).expect(200);

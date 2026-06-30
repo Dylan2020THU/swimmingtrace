@@ -44,8 +44,8 @@ const NAMED: SeedSwimmer[] = [
 // --- 50 generated members with full demographics -------------------------
 const SURNAMES = ['王', '李', '张', '刘', '陈', '杨', '赵', '黄', '周', '吴', '徐', '孙', '马', '朱', '胡', '郭', '何', '高', '林', '罗'];
 const GIVEN = ['伟', '芳', '娜', '敏', '静', '丽', '强', '磊', '军', '洋', '勇', '艳', '杰', '娟', '涛', '明', '超', '霞', '平', '刚', '文', '辉', '梅', '鹏', '华', '飞', '红', '燕', '建', '波'];
-// Ages cycled so members fall across all five age bands (10及以下 … 18及以上).
-const AGES = [8, 9, 11, 12, 13, 14, 15, 16, 17, 19, 22, 27, 34, 41];
+// Ages cycled so members fall across all eight age bands (6至8岁 … 70岁以上).
+const AGES = [6, 7, 8, 10, 12, 14, 16, 18, 22, 28, 34, 41, 50, 62, 75];
 const THIS_YEAR = new Date().getUTCFullYear();
 
 const GENERATED: SeedSwimmer[] = Array.from({ length: 50 }, (_, k) => {

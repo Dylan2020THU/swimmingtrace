@@ -10,7 +10,7 @@ import { SeasonDetailPage } from './SeasonDetailPage';
 const detail = {
   id: 's1', name: '2026春季系列赛', referenceDate: '2026-01-01T00:00:00.000Z', published: false, meetCount: 2, createdAt: '2026-01-01T00:00:00.000Z',
   meets: [{ id: 'm1', name: 'M1', meetDate: '2026-02-01T00:00:00.000Z' }],
-  standings: [{ gender: 'MALE', ageGroup: '13-14', rows: [
+  standings: [{ gender: 'MALE', ageGroup: '9至14岁', rows: [
     { rank: 1, swimmerId: 'a', name: 'Ada', points: 18 },
     { rank: 2, swimmerId: 'b', name: 'Ben', points: 14 },
   ] }],
@@ -26,7 +26,7 @@ it('展示赛季积分榜（性别/年龄组 + 积分），开关触发发布', 
   renderWithProviders(<Routes><Route path="/seasons/:seasonId" element={<SeasonDetailPage />} /></Routes>, { route: '/seasons/s1' });
 
   expect(await screen.findByText('2026春季系列赛')).toBeInTheDocument();
-  expect(await screen.findByText('男 · 13-14')).toBeInTheDocument();
+  expect(await screen.findByText('男 · 9至14岁')).toBeInTheDocument();
   expect(screen.getByText('Ada')).toBeInTheDocument();
   expect(screen.getByText('18')).toBeInTheDocument();
 
