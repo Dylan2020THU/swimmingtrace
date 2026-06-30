@@ -87,6 +87,13 @@ export function usePublishMeet(meetId: string) {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['meet', meetId] }); qc.invalidateQueries({ queryKey: ['meets'] }); },
   });
 }
+export function useSetMeetRegistration(meetId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (registrationOpen: boolean) => ep.setMeetRegistration(meetId, registrationOpen),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['meet', meetId] }); qc.invalidateQueries({ queryKey: ['meets'] }); },
+  });
+}
 export const usePublicMeet = (id: string) => useQuery({ queryKey: ['publicMeet', id], queryFn: () => ep.getPublicMeet(id), retry: false });
 export const usePublicStartList = (eid: string | null) =>
   useQuery({ queryKey: ['publicStartList', eid], queryFn: () => ep.getPublicStartList(eid!), enabled: !!eid });

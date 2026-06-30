@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import type { EntryItem, ResultStatus, StandingsGroup, Stroke } from '@swim/shared';
 import {
-  useMeet, useAddRaceEvent, usePools, useEntries, useAddEntry, useSetResult, useStandings, useSeedEvent, usePublishMeet,
+  useMeet, useAddRaceEvent, usePools, useEntries, useAddEntry, useSetResult, useStandings, useSeedEvent, usePublishMeet, useSetMeetRegistration,
 } from '../../lib/queries';
 import * as ep from '../../lib/api/endpoints';
 import { STROKE_LABELS, RESULT_STATUS_LABELS, formatSwimTime, parseSwimTime } from '../../lib/swim-time';
@@ -118,6 +118,12 @@ export function MeetDetailPage() {
   };
   const publicUrl = `${window.location.origin}/p/meets/${meetId}`;
 
+  const setRegistration = useSetMeetRegistration(meetId);
+  const onRegistration = async (checked: boolean) => {
+    try { await setRegistration.mutateAsync(checked); message.success(checked ? '已开放报名' : '已关闭报名'); }
+    catch (e: any) { message.error(e?.response?.data?.message ?? '操作失败'); }
+  };
+
   const submitEvent = async (v: { distanceMeters: number; stroke: Stroke }) => {
     try { await addEvent.mutateAsync({ distanceMeters: Number(v.distanceMeters), stroke: v.stroke }); eventForm.resetFields(); setEventOpen(false); }
     catch (e: any) { message.error(e?.response?.data?.message ?? '添加失败'); }
@@ -138,6 +144,8 @@ export function MeetDetailPage() {
         extra={
           m && (
             <Space>
+              <span style={{ color: 'var(--text-secondary)' }}>开放报名</span>
+              <Switch checked={m.registrationOpen} loading={setRegistration.isPending} onChange={onRegistration} />
               <span style={{ color: 'var(--text-secondary)' }}>公开</span>
               <Switch checked={m.published} loading={publish.isPending} onChange={onPublish} />
               {m.published && (

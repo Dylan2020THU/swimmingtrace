@@ -85,6 +85,8 @@ export const getStandings = (eid: string) => api.get<StandingsGroup[]>(`/events/
 export const seedEvent = (eid: string) => api.post<EntryItem[]>(`/events/${eid}/seed`).then((r) => r.data);
 export const publishMeet = (id: string, published: boolean) =>
   api.post<{ published: boolean }>(`/meets/${id}/publish`, { published }).then((r) => r.data);
+export const setMeetRegistration = (id: string, registrationOpen: boolean) =>
+  api.post<{ registrationOpen: boolean }>(`/meets/${id}/registration`, { registrationOpen }).then((r) => r.data);
 export const getPublicMeet = (id: string) => api.get<PublicMeet>(`/public/meets/${id}`).then((r) => r.data);
 export const getPublicStartList = (eid: string) => api.get<PublicStartListHeat[]>(`/public/events/${eid}/startlist`).then((r) => r.data);
 export const getPublicResults = (eid: string) => api.get<StandingsGroup[]>(`/public/events/${eid}/results`).then((r) => r.data);

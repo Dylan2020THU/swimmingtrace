@@ -127,7 +127,7 @@ export type Medal = 'gold' | 'silver' | 'bronze';
 export interface MeetSummary {
   id: string; name: string; meetDate: string;
   hostPoolId: string | null; hostPoolName: string | null;
-  laneCount: number; eventCount: number; published: boolean; createdAt: string;
+  laneCount: number; eventCount: number; published: boolean; registrationOpen: boolean; createdAt: string;
 }
 export interface RaceEventItem { id: string; distanceMeters: number; stroke: Stroke; order: number; entryCount: number; }
 export interface MeetDetail extends MeetSummary { events: RaceEventItem[]; }
@@ -158,6 +158,19 @@ export interface PublicMeet {
 }
 export interface PublicStartListEntry { lane: number; name: string | null; seedTimeMs: number | null; }
 export interface PublicStartListHeat { heat: number; entries: PublicStartListEntry[]; }
+
+// self-registration (E4) — swimmer self-registers for an owner's open meets
+export interface UpdateProfileDto { gender?: Gender; birthDate?: string; }
+export interface SetRegistrationDto { registrationOpen: boolean; }
+export interface SelfEntryDto { seedTimeMs?: number | null; }
+export interface MyMeetEvent {
+  id: string; distanceMeters: number; stroke: Stroke; order: number;
+  myEntryId: string | null; mySeedTimeMs: number | null;
+}
+export interface MyMeet {
+  id: string; name: string; meetDate: string; hostPoolName: string | null;
+  events: MyMeetEvent[];
+}
 
 // platform — uniform error envelope returned by the global exception filter for ALL errors
 export interface ApiErrorResponse {

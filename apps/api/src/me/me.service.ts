@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { MyPoolItem, MyChallengeItem } from '@swim/shared';
+import { Gender, MyPoolItem, MyChallengeItem, UpdateProfileDto } from '@swim/shared';
 import { ChallengesService } from '../challenges/challenges.service';
 
 @Injectable()
@@ -9,6 +9,15 @@ export class MeService {
     private prisma: PrismaService,
     private challenges: ChallengesService,
   ) {}
+
+  /** Update the swimmer's own demographics (needed to self-register for meets). */
+  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<{ gender: Gender | null; birthDate: string | null }> {
+    const data: { gender?: Gender; birthDate?: Date } = {};
+    if (dto.gender !== undefined) data.gender = dto.gender;
+    if (dto.birthDate !== undefined) data.birthDate = new Date(dto.birthDate);
+    const u = await this.prisma.user.update({ where: { id: userId }, data });
+    return { gender: u.gender ?? null, birthDate: u.birthDate ? u.birthDate.toISOString() : null };
+  }
 
   /** Pools the swimmer is actively registered in (for selecting where to self-record). */
   async myPools(swimmerId: string): Promise<MyPoolItem[]> {

@@ -22,6 +22,26 @@ describe('MeService.myPools', () => {
   });
 });
 
+describe('MeService.updateProfile', () => {
+  it('仅写入提供的字段并返回标准化资料', async () => {
+    const prisma: any = {
+      user: { update: jest.fn().mockResolvedValue({ gender: 'FEMALE', birthDate: new Date('2010-05-04T00:00:00.000Z') }) },
+    };
+    const res = await new MeService(prisma, {} as any).updateProfile('s1', { gender: 'FEMALE', birthDate: '2010-05-04T00:00:00.000Z' });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 's1' },
+      data: { gender: 'FEMALE', birthDate: new Date('2010-05-04T00:00:00.000Z') },
+    });
+    expect(res).toEqual({ gender: 'FEMALE', birthDate: '2010-05-04T00:00:00.000Z' });
+  });
+
+  it('未提供字段不写入（部分更新）', async () => {
+    const prisma: any = { user: { update: jest.fn().mockResolvedValue({ gender: 'MALE', birthDate: null }) } };
+    await new MeService(prisma, {} as any).updateProfile('s1', { gender: 'MALE' });
+    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 's1' }, data: { gender: 'MALE' } });
+  });
+});
+
 describe('MeService.myChallenges', () => {
   it('返回进行中挑战 + 我的名次/里程/池进度', async () => {
     const prisma: any = {
