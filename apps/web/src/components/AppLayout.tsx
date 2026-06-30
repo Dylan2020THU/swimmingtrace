@@ -61,6 +61,7 @@ export function AppLayout() {
             selectable={false}
             items={[
               { key: 'overview', label: '总览', onClick: () => navigate('/pools') },
+              { key: 'meets', label: '赛事', onClick: () => navigate('/meets') },
               { key: 'account', label: '账号与数据', onClick: () => navigate('/account') },
             ]}
           />

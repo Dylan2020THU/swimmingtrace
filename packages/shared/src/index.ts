@@ -21,13 +21,14 @@ export interface PoolDetail {
 }
 
 // swimmers / membership
-export interface CreateSwimmerDto { name?: string; email: string; }
+export interface CreateSwimmerDto { name?: string; email: string; gender?: Gender; birthDate?: string; }
 export interface SwimmerListItem {
   swimmerId: string; name: string | null; email: string;
   status: RegistrationStatus; claimedAt: string | null;
   mileageLast30dMeters: number; joinedAt: string;
+  gender: Gender | null; birthDate: string | null;
 }
-export interface UpdateMembershipDto { status: RegistrationStatus; }
+export interface UpdateMembershipDto { status?: RegistrationStatus; gender?: Gender | null; birthDate?: string | null; }
 
 // session recording — owner 代录 (poolId via URL) or swimmer self-record (poolId in body)
 export interface CreateSessionDto { distanceMeters: number; durationSeconds?: number; swamAt: string; poolId?: string; }
@@ -108,7 +109,7 @@ export interface PlanInfo {
   plan: Plan;
   limits: { maxPools: number; maxMembers: number };
   usage: { pools: number; members: number };
-  features: { export: boolean; challenges: boolean; apiKeys: boolean };
+  features: { export: boolean; challenges: boolean; apiKeys: boolean; meets: boolean };
 }
 export interface SetPlanDto { plan: Plan; }
 
@@ -116,6 +117,36 @@ export interface SetPlanDto { plan: Plan; }
 export interface ApiKeyListItem { id: string; label: string; prefix: string; lastUsedAt: string | null; createdAt: string; }
 export interface CreatedApiKey { id: string; label: string; prefix: string; key: string; createdAt: string; }
 export interface CreateApiKeyDto { label: string; }
+
+// meets (competition platform E1) — meet → race events → entries(+results) → standings by gender × age-group
+export type Gender = 'MALE' | 'FEMALE';
+export type Stroke = 'FREE' | 'BACK' | 'BREAST' | 'FLY' | 'IM';
+export type ResultStatus = 'ENTERED' | 'OK' | 'DNS' | 'DNF' | 'DQ';
+export type Medal = 'gold' | 'silver' | 'bronze';
+
+export interface MeetSummary {
+  id: string; name: string; meetDate: string;
+  hostPoolId: string | null; hostPoolName: string | null;
+  eventCount: number; createdAt: string;
+}
+export interface RaceEventItem { id: string; distanceMeters: number; stroke: Stroke; order: number; entryCount: number; }
+export interface MeetDetail extends MeetSummary { events: RaceEventItem[]; }
+export interface EntryItem {
+  id: string; swimmerId: string; name: string | null; email: string;
+  gender: Gender | null; birthDate: string | null;
+  seedTimeMs: number | null; resultTimeMs: number | null; resultStatus: ResultStatus;
+}
+export interface StandingRow {
+  rank: number | null; medal: Medal | null;
+  swimmerId: string; name: string | null;
+  resultTimeMs: number | null; resultStatus: ResultStatus;
+}
+export interface StandingsGroup { gender: Gender; ageGroup: string; rows: StandingRow[]; }
+
+export interface CreateMeetDto { name: string; meetDate: string; hostPoolId?: string | null; }
+export interface CreateRaceEventDto { distanceMeters: number; stroke: Stroke; }
+export interface CreateEntryDto { swimmerId: string; seedTimeMs?: number | null; }
+export interface SetResultDto { resultStatus: ResultStatus; resultTimeMs?: number | null; }
 
 // platform — uniform error envelope returned by the global exception filter for ALL errors
 export interface ApiErrorResponse {

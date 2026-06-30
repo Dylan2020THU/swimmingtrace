@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CreatePoolDto, UpdatePoolDto, CreateSwimmerDto, UpdateMembershipDto, CreateSessionDto, CreateChallengeDto, Plan } from '@swim/shared';
+import type {
+  CreatePoolDto, UpdatePoolDto, CreateSwimmerDto, UpdateMembershipDto, CreateSessionDto, CreateChallengeDto, Plan,
+  CreateMeetDto, CreateRaceEventDto, CreateEntryDto, SetResultDto,
+} from '@swim/shared';
 import * as ep from './api/endpoints';
 
 export const usePlan = () => useQuery({ queryKey: ['plan'], queryFn: ep.getPlan });
@@ -23,6 +26,51 @@ export function useSetPlan() {
   return useMutation({
     mutationFn: (plan: Plan) => ep.setPlan(plan),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['plan'] }),
+  });
+}
+
+// meets (competition platform E1)
+export const useMeets = () => useQuery({ queryKey: ['meets'], queryFn: ep.listMeets });
+export const useMeet = (id: string) => useQuery({ queryKey: ['meet', id], queryFn: () => ep.getMeet(id) });
+export function useCreateMeet() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (b: CreateMeetDto) => ep.createMeet(b), onSuccess: () => qc.invalidateQueries({ queryKey: ['meets'] }) });
+}
+export function useDeleteMeet() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => ep.deleteMeet(id), onSuccess: () => qc.invalidateQueries({ queryKey: ['meets'] }) });
+}
+export function useAddRaceEvent(meetId: string) {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (b: CreateRaceEventDto) => ep.addRaceEvent(meetId, b), onSuccess: () => qc.invalidateQueries({ queryKey: ['meet', meetId] }) });
+}
+export function useDeleteRaceEvent(meetId: string) {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (eid: string) => ep.deleteRaceEvent(eid), onSuccess: () => qc.invalidateQueries({ queryKey: ['meet', meetId] }) });
+}
+export const useEntries = (eventId: string | null) =>
+  useQuery({ queryKey: ['entries', eventId], queryFn: () => ep.listEntries(eventId!), enabled: !!eventId });
+export const useStandings = (eventId: string | null) =>
+  useQuery({ queryKey: ['standings', eventId], queryFn: () => ep.getStandings(eventId!), enabled: !!eventId });
+export function useAddEntry(eventId: string, meetId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (b: CreateEntryDto) => ep.addEntry(eventId, b),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['entries', eventId] });
+      qc.invalidateQueries({ queryKey: ['standings', eventId] });
+      qc.invalidateQueries({ queryKey: ['meet', meetId] });
+    },
+  });
+}
+export function useSetResult(eventId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ enid, b }: { enid: string; b: SetResultDto }) => ep.setEntryResult(enid, b),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['entries', eventId] });
+      qc.invalidateQueries({ queryKey: ['standings', eventId] });
+    },
   });
 }
 

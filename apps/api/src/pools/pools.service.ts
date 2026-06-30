@@ -1,7 +1,7 @@
 import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Prisma } from '@prisma/client';
-import { IsDateString, IsEmail, IsEnum, IsInt, IsLatitude, IsLongitude, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsDateString, IsEmail, IsEnum, IsIn, IsInt, IsLatitude, IsLongitude, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { Gender } from '@swim/shared';
 import { PrismaService } from '../prisma.service';
 import { MailService } from '../mail/mail.service';
 import { BillingService } from '../billing/billing.service';
@@ -32,10 +32,14 @@ export class RegisterSwimmerDto {
 export class CreateSwimmerDto {
   @IsOptional() @IsString() name?: string;
   @IsEmail() email: string;
+  @IsOptional() @IsIn(['MALE', 'FEMALE']) gender?: Gender;
+  @IsOptional() @IsDateString() birthDate?: string;
 }
 
 export class UpdateMembershipDto {
-  @IsEnum({ ACTIVE: 'ACTIVE', INACTIVE: 'INACTIVE' }) status: 'ACTIVE' | 'INACTIVE';
+  @IsOptional() @IsEnum({ ACTIVE: 'ACTIVE', INACTIVE: 'INACTIVE' }) status?: 'ACTIVE' | 'INACTIVE';
+  @IsOptional() @IsIn(['MALE', 'FEMALE']) gender?: Gender;
+  @IsOptional() @IsDateString() birthDate?: string;
 }
 
 export class RecordSessionDto implements CreateSessionDto {
@@ -133,7 +137,7 @@ export class PoolsService {
     const [regs, total] = await Promise.all([
       this.prisma.registration.findMany({
         where: { poolId },
-        include: { swimmer: { select: { id: true, name: true, email: true, claimedAt: true } } },
+        include: { swimmer: { select: { id: true, name: true, email: true, claimedAt: true, gender: true, birthDate: true } } },
         orderBy: { joinedAt: 'desc' },
         skip,
         take,
@@ -151,6 +155,8 @@ export class PoolsService {
           swimmerId: r.swimmer.id, name: r.swimmer.name, email: r.swimmer.email,
           status: r.status, claimedAt: r.swimmer.claimedAt ? r.swimmer.claimedAt.toISOString() : null,
           mileageLast30dMeters: agg._sum.distanceMeters ?? 0, joinedAt: r.joinedAt.toISOString(),
+          gender: r.swimmer.gender ?? null,
+          birthDate: r.swimmer.birthDate ? r.swimmer.birthDate.toISOString() : null,
         };
       }),
     );
@@ -160,18 +166,23 @@ export class PoolsService {
   async createSwimmer(ownerId: string, poolId: string, dto: CreateSwimmerDto): Promise<SwimmerListItem> {
     await assertOwnsPool(this.prisma, ownerId, poolId);
     await this.billing.assertCanAddMember(ownerId);
+    const birthDate = dto.birthDate !== undefined ? (dto.birthDate ? new Date(dto.birthDate) : null) : undefined;
     let user = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (!user) {
       const passwordHash = await bcrypt.hash(randomBytes(24).toString('hex'), 12);
       user = await this.prisma.user.create({
-        data: { email: dto.email, name: dto.name, passwordHash, role: 'SWIMMER' },
+        data: { email: dto.email, name: dto.name, passwordHash, role: 'SWIMMER', gender: dto.gender, birthDate: birthDate ?? undefined },
       });
     } else if (user.role !== 'SWIMMER') {
       // Never adopt an existing non-swimmer account (e.g. another OWNER) into a
       // roster by email — that would let it be claimed and taken over.
       throw new ConflictException('该邮箱已被其他账号占用，无法作为游泳者添加');
-    } else if (dto.name && !user.name) {
-      user = await this.prisma.user.update({ where: { id: user.id }, data: { name: dto.name } });
+    } else {
+      const data: { name?: string; gender?: Gender; birthDate?: Date | null } = {};
+      if (dto.name && !user.name) data.name = dto.name;
+      if (dto.gender !== undefined) data.gender = dto.gender;
+      if (birthDate !== undefined) data.birthDate = birthDate;
+      if (Object.keys(data).length) user = await this.prisma.user.update({ where: { id: user.id }, data });
     }
     const reg = await this.prisma.registration.upsert({
       where: { swimmerId_poolId: { swimmerId: user.id, poolId } },
@@ -182,22 +193,24 @@ export class PoolsService {
       swimmerId: user.id, name: user.name, email: user.email,
       status: reg.status, claimedAt: user.claimedAt ? user.claimedAt.toISOString() : null,
       mileageLast30dMeters: 0, joinedAt: reg.joinedAt.toISOString(),
+      gender: user.gender ?? null,
+      birthDate: user.birthDate ? user.birthDate.toISOString() : null,
     };
   }
 
+  /** Toggle membership status and/or update the swimmer's competition demographics. */
   async setMembershipStatus(ownerId: string, poolId: string, swimmerId: string, dto: UpdateMembershipDto) {
     await assertOwnsPool(this.prisma, ownerId, poolId);
-    try {
-      return await this.prisma.registration.update({
-        where: { swimmerId_poolId: { swimmerId, poolId } },
-        data: { status: dto.status },
-      });
-    } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025') {
-        throw new NotFoundException('该游泳者未登记在本泳池');
-      }
-      throw e;
+    const reg = await this.prisma.registration.findUnique({ where: { swimmerId_poolId: { swimmerId, poolId } } });
+    if (!reg) throw new NotFoundException('该游泳者未登记在本泳池');
+    if (dto.status) {
+      await this.prisma.registration.update({ where: { swimmerId_poolId: { swimmerId, poolId } }, data: { status: dto.status } });
     }
+    const data: { gender?: Gender; birthDate?: Date | null } = {};
+    if (dto.gender !== undefined) data.gender = dto.gender;
+    if (dto.birthDate !== undefined) data.birthDate = dto.birthDate ? new Date(dto.birthDate) : null;
+    if (Object.keys(data).length) await this.prisma.user.update({ where: { id: swimmerId }, data });
+    return { ok: true };
   }
 
   async recordSessionForSwimmer(ownerId: string, poolId: string, swimmerId: string, dto: CreateSessionDto) {

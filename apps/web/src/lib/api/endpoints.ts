@@ -6,6 +6,8 @@ import type {
   OverviewStats, PoolStats, SwimmerStats, ClaimLinkResponse,
   ChallengeSummary, ChallengeDetail, CreateChallengeDto, ActiveChallengeItem, AccountExport, Plan, PlanInfo,
   ApiKeyListItem, CreatedApiKey,
+  MeetSummary, MeetDetail, RaceEventItem, EntryItem, StandingsGroup,
+  CreateMeetDto, CreateRaceEventDto, CreateEntryDto, SetResultDto,
 } from '@swim/shared';
 
 export const login = (b: { email: string; password: string }) =>
@@ -64,6 +66,21 @@ export const revokeApiKey = (id: string) => api.delete(`/api-keys/${id}`).then((
 export const exportAccount = () => api.get<AccountExport>('/account/export').then((r) => r.data);
 export const deleteAccount = (password: string) =>
   api.delete('/account', { data: { password } }).then((r) => r.data);
+
+// meets (competition platform E1)
+export const listMeets = () => api.get<MeetSummary[]>('/meets').then((r) => r.data);
+export const getMeet = (id: string) => api.get<MeetDetail>(`/meets/${id}`).then((r) => r.data);
+export const createMeet = (b: CreateMeetDto) => api.post<MeetSummary>('/meets', b).then((r) => r.data);
+export const deleteMeet = (id: string) => api.delete(`/meets/${id}`).then((r) => r.data);
+export const addRaceEvent = (meetId: string, b: CreateRaceEventDto) =>
+  api.post<RaceEventItem>(`/meets/${meetId}/events`, b).then((r) => r.data);
+export const deleteRaceEvent = (eid: string) => api.delete(`/events/${eid}`).then((r) => r.data);
+export const listEntries = (eid: string) => api.get<EntryItem[]>(`/events/${eid}/entries`).then((r) => r.data);
+export const addEntry = (eid: string, b: CreateEntryDto) => api.post<EntryItem>(`/events/${eid}/entries`, b).then((r) => r.data);
+export const deleteEntry = (enid: string) => api.delete(`/entries/${enid}`).then((r) => r.data);
+export const setEntryResult = (enid: string, b: SetResultDto) =>
+  api.patch<EntryItem>(`/entries/${enid}/result`, b).then((r) => r.data);
+export const getStandings = (eid: string) => api.get<StandingsGroup[]>(`/events/${eid}/standings`).then((r) => r.data);
 
 export const getOverview = () => api.get<OverviewStats>('/stats/overview').then((r) => r.data);
 export const getPoolStats = (id: string) => api.get<PoolStats>(`/stats/pool/${id}`).then((r) => r.data);

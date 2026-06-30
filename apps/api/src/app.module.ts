@@ -11,6 +11,7 @@ import { ObservabilityMiddleware } from './common/observability/observability.mi
 import { MetricsModule } from './metrics/metrics.module';
 import { AccountModule } from './account/account.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
+import { MeetsModule } from './meets/meets.module';
 import { genReqId } from './common/logging/req-id';
 import { AuthModule } from './auth/auth.module';
 import { PoolsModule } from './pools/pools.module';
@@ -57,6 +58,7 @@ import { HealthModule } from './health/health.module';
     MetricsModule,
     AccountModule,
     ApiKeysModule,
+    MeetsModule,
   ],
   providers: [
     PrismaService,
