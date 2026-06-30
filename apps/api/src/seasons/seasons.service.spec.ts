@@ -53,6 +53,26 @@ describe('SeasonsService', () => {
     expect(await new SeasonsService(prisma, mkBilling()).setSeasonPublished('o1', 's1', true)).toEqual({ published: true });
   });
 
+  it('publicSeason：未发布 → 404；已发布投影无 PII', async () => {
+    const unp: any = { season: { findUnique: jest.fn().mockResolvedValue({ id: 's1', published: false }) } };
+    await expect(new SeasonsService(unp, mkBilling()).publicSeason('s1')).rejects.toBeInstanceOf(NotFoundException);
+
+    const pub: any = {
+      season: { findUnique: jest.fn().mockResolvedValue({ id: 's1', ownerId: 'owner-uuid', name: 'S', referenceDate: new Date('2026-01-01T00:00:00.000Z'), published: true, createdAt: new Date('2026-01-01T00:00:00.000Z') }) },
+      meet: { findMany: jest.fn().mockResolvedValue([{ events: [{ entries: [{ swimmer: { ...swimmer('a', 'A'), email: 'a@x.com' }, resultTimeMs: 30000, resultStatus: 'OK' }] }] }]) },
+    };
+    const out = await new SeasonsService(pub, mkBilling()).publicSeason('s1');
+    expect(out).toMatchObject({ id: 's1', name: 'S' });
+    expect(out.standings[0].rows[0]).toMatchObject({ swimmerId: 'a', points: 9 });
+    expect(JSON.stringify(out)).not.toContain('@'); // no email
+    expect(JSON.stringify(out)).not.toContain('owner-uuid'); // no ownerId
+  });
+
+  it('publicSeasonRecords：未发布 → 404', async () => {
+    const unp: any = { season: { findUnique: jest.fn().mockResolvedValue({ published: false }) } };
+    await expect(new SeasonsService(unp, mkBilling()).publicSeasonRecords('s1')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
   it('clubRecordsOf：每格取最快 OK', async () => {
     const prisma: any = {
       meetEntry: {

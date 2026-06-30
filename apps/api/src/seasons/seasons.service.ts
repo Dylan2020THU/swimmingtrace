@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { IsBoolean, IsDateString, IsString } from 'class-validator';
 import {
   CreateSeasonDto,
+  PublicSeason,
   RecordRow,
   SeasonDetail,
   SeasonStandingsGroup,
@@ -123,6 +124,21 @@ export class SeasonsService {
     await this.ownSeason(ownerId, id);
     await this.prisma.season.update({ where: { id }, data: { published } });
     return { published };
+  }
+
+  /** Public season points board — only for a published season; PII-free (name+age-group+points). */
+  async publicSeason(id: string): Promise<PublicSeason> {
+    const season = await this.prisma.season.findUnique({ where: { id } });
+    if (!season || !season.published) throw new NotFoundException();
+    const standings = await this.standingsForSeason(season);
+    return { id: season.id, name: season.name, standings };
+  }
+
+  /** Public club records for a published season's owner; PII-free (no ownerId/email). */
+  async publicSeasonRecords(id: string): Promise<RecordRow[]> {
+    const season = await this.prisma.season.findUnique({ where: { id } });
+    if (!season || !season.published) throw new NotFoundException();
+    return this.clubRecordsOf(season.ownerId);
   }
 
   /** Club records over all of an owner's meets. */
