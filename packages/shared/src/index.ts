@@ -127,7 +127,8 @@ export type Medal = 'gold' | 'silver' | 'bronze';
 export interface MeetSummary {
   id: string; name: string; meetDate: string;
   hostPoolId: string | null; hostPoolName: string | null;
-  laneCount: number; eventCount: number; published: boolean; registrationOpen: boolean; createdAt: string;
+  laneCount: number; eventCount: number; published: boolean; registrationOpen: boolean;
+  seasonId: string | null; seasonName: string | null; createdAt: string;
 }
 export interface RaceEventItem { id: string; distanceMeters: number; stroke: Stroke; order: number; entryCount: number; }
 export interface MeetDetail extends MeetSummary { events: RaceEventItem[]; }
@@ -171,6 +172,32 @@ export interface MyMeet {
   id: string; name: string; meetDate: string; hostPoolName: string | null;
   events: MyMeetEvent[];
 }
+
+// records & points (E5) — season points leaderboard + club records / personal bests
+export interface CreateSeasonDto { name: string; referenceDate: string; }
+export interface SetSeasonPublishedDto { published: boolean; }
+export interface AssignSeasonDto { seasonId: string | null; }
+export interface SeasonSummary {
+  id: string; name: string; referenceDate: string;
+  published: boolean; meetCount: number; createdAt: string;
+}
+export interface SeasonStandingRow { rank: number | null; swimmerId: string; name: string | null; points: number; }
+export interface SeasonStandingsGroup { gender: Gender; ageGroup: string; rows: SeasonStandingRow[]; }
+export interface SeasonDetail extends SeasonSummary {
+  meets: Array<{ id: string; name: string; meetDate: string }>;
+  standings: SeasonStandingsGroup[];
+}
+// A club record: fastest-ever OK time per (distance × stroke × gender × age-group). No ownerId (PII-safe).
+export interface RecordRow {
+  distanceMeters: number; stroke: Stroke; gender: Gender; ageGroup: string;
+  swimmerId: string; name: string | null; timeMs: number; meetName: string; meetDate: string;
+}
+// A swimmer's personal best per (distance × stroke), flagged if it is the current club record.
+export interface PbRow {
+  distanceMeters: number; stroke: Stroke; timeMs: number;
+  meetName: string; meetDate: string; isClubRecord: boolean;
+}
+export interface PublicSeason { id: string; name: string; standings: SeasonStandingsGroup[]; }
 
 // platform — uniform error envelope returned by the global exception filter for ALL errors
 export interface ApiErrorResponse {
