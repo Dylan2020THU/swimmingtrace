@@ -90,12 +90,12 @@ export function ChallengeDetailPage() {
       </Card>
       <Card title="排行榜">
         <Space wrap style={{ marginBottom: 12 }}>
-          <Select allowClear placeholder="性别" style={{ width: 100 }} value={fGender} onChange={setFGender}
-            options={[{ value: 'MALE', label: '男' }, { value: 'FEMALE', label: '女' }]} />
-          <Select allowClear placeholder="年龄组" style={{ width: 130 }} value={fAge} onChange={setFAge}
-            options={AGE_GROUPS.map((b) => ({ value: b.label, label: b.label }))} />
-          <Select allowClear placeholder="状态" style={{ width: 100 }} value={fStatus} onChange={setFStatus}
-            options={[{ value: 'ACTIVE', label: '活跃' }, { value: 'INACTIVE', label: '停用' }]} />
+          <Select aria-label="性别" style={{ width: 100 }} value={fGender ?? ''} onChange={(v) => setFGender(v || undefined)}
+            options={[{ value: '', label: '全部性别' }, { value: 'MALE', label: '男' }, { value: 'FEMALE', label: '女' }]} />
+          <Select aria-label="年龄组" style={{ width: 130 }} value={fAge ?? ''} onChange={(v) => setFAge(v || undefined)}
+            options={[{ value: '', label: '全部年龄组' }, ...AGE_GROUPS.map((b) => ({ value: b.label, label: b.label }))]} />
+          <Select aria-label="状态" style={{ width: 100 }} value={fStatus ?? ''} onChange={(v) => setFStatus(v || undefined)}
+            options={[{ value: '', label: '全部状态' }, { value: 'ACTIVE', label: '活跃' }, { value: 'INACTIVE', label: '停用' }]} />
           <Input.Search placeholder="姓名/邮箱" allowClear style={{ width: 200 }} value={q} onChange={(e) => setQ(e.target.value)} />
         </Space>
         <Table<LeaderboardRow>

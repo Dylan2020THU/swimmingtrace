@@ -19,8 +19,8 @@ export function RosterTable({ poolId }: { poolId: string }) {
   const navigate = useNavigate();
   const { message } = App.useApp();
 
-  // Any filter change resets to the first page (server-side pagination).
-  const onFilter = (set: (v: string | undefined) => void) => (v: string | undefined) => { set(v); setPage(1); };
+  // Any filter change resets to the first page (server-side pagination). '' (全部) clears the filter.
+  const onFilter = (set: (v: string | undefined) => void) => (v: string) => { set(v || undefined); setPage(1); };
 
   const toggle = async (r: SwimmerListItem) => {
     const next = r.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
@@ -52,10 +52,10 @@ export function RosterTable({ poolId }: { poolId: string }) {
   return (
     <Card title="会员名册" extra={<Button type="primary" onClick={() => setOpen(true)}>新建会员</Button>}>
       <Space wrap style={{ marginBottom: 12 }}>
-        <Select allowClear placeholder="性别" style={{ width: 100 }} value={gender} onChange={onFilter(setGender)}
-          options={[{ value: 'MALE', label: '男' }, { value: 'FEMALE', label: '女' }]} />
-        <Select allowClear placeholder="状态" style={{ width: 100 }} value={status} onChange={onFilter(setStatus)}
-          options={[{ value: 'ACTIVE', label: '活跃' }, { value: 'INACTIVE', label: '停用' }]} />
+        <Select aria-label="性别" style={{ width: 100 }} value={gender ?? ''} onChange={onFilter(setGender)}
+          options={[{ value: '', label: '全部性别' }, { value: 'MALE', label: '男' }, { value: 'FEMALE', label: '女' }]} />
+        <Select aria-label="状态" style={{ width: 100 }} value={status ?? ''} onChange={onFilter(setStatus)}
+          options={[{ value: '', label: '全部状态' }, { value: 'ACTIVE', label: '活跃' }, { value: 'INACTIVE', label: '停用' }]} />
         <Input.Search placeholder="姓名/邮箱" allowClear style={{ width: 220 }} onSearch={(v) => { setQ(v || undefined); setPage(1); }} />
       </Space>
       <Table<SwimmerListItem>

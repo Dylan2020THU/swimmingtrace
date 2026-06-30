@@ -227,8 +227,8 @@ export function MeetDetailPage() {
           <Card
             title="报名与成绩"
             extra={
-              <Select allowClear size="small" placeholder="按性别筛选" style={{ width: 120 }} value={entryGender} onChange={setEntryGender}
-                options={[{ value: 'MALE', label: '男' }, { value: 'FEMALE', label: '女' }]} />
+              <Select aria-label="按性别筛选" size="small" style={{ width: 120 }} value={entryGender ?? ''} onChange={(v) => setEntryGender(v || undefined)}
+                options={[{ value: '', label: '全部性别' }, { value: 'MALE', label: '男' }, { value: 'FEMALE', label: '女' }]} />
             }
           >
             <List

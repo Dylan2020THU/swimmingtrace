@@ -41,6 +41,26 @@ it('搜索：onSearch 发起带 q 参数的服务端请求', async () => {
   await waitFor(() => expect(lastQ).toBe('sam'));
 });
 
+it('性别筛选含「全部」选项，可筛选并重置', async () => {
+  let lastGender: string | null = 'init';
+  server.use(
+    http.get('/api/pools/p1/swimmers', ({ request }) => {
+      lastGender = new URL(request.url).searchParams.get('gender');
+      return HttpResponse.json(page([sam]));
+    }),
+  );
+  renderWithProviders(<Routes><Route path="*" element={<RosterTable poolId="p1" />} /></Routes>, { route: '/pools/p1' });
+  await screen.findByText('Sam');
+  await waitFor(() => expect(lastGender).toBeNull()); // 默认「全部」→ 不带 gender 参数
+  const genderSelect = screen.getByRole('combobox', { name: '性别' });
+  await userEvent.click(genderSelect);
+  await userEvent.click(await screen.findByText('男'));
+  await waitFor(() => expect(lastGender).toBe('MALE'));
+  await userEvent.click(genderSelect);
+  await userEvent.click(await screen.findByText('全部性别'));
+  await waitFor(() => expect(lastGender).toBeNull()); // 选「全部」→ 重置
+});
+
 it('服务端分页：切换页码请求下一页并展示其数据', async () => {
   server.use(
     http.get('/api/pools/p1/swimmers', ({ request }) => {
