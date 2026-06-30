@@ -39,10 +39,9 @@ export function RosterTable({ poolId }: { poolId: string }) {
       title: '操作', key: 'op',
       render: (_: unknown, r: SwimmerListItem) => (
         <Space>
-          <Button size="small" onClick={(e) => { e.stopPropagation(); navigate(`/swimmers/${r.swimmerId}`); }}>个人泳迹图</Button>
-          <Button size="small" onClick={(e) => { e.stopPropagation(); toggle(r); }}>
-            {r.status === 'ACTIVE' ? '停用' : '恢复'}
-          </Button>
+          <Button size="small" onClick={() => navigate(`/swimmers/${r.swimmerId}`)}>个人泳迹图</Button>
+          <Button size="small" onClick={() => navigate(`/pools/${poolId}/swimmers/${r.swimmerId}`)}>代录</Button>
+          <Button size="small" onClick={() => toggle(r)}>{r.status === 'ACTIVE' ? '停用' : '恢复'}</Button>
           <ClaimLinkButton poolId={poolId} sid={r.swimmerId} claimed={!!r.claimedAt} />
         </Space>
       ),
