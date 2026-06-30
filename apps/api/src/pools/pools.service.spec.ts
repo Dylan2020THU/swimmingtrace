@@ -1,5 +1,4 @@
 import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PoolsService } from './pools.service';
 
 const mkMail = () =>
