@@ -13,9 +13,9 @@ export function MeetsListPage() {
   const [open, setOpen] = useState(false);
   const [form] = Form.useForm();
 
-  const submit = async (v: { name: string; meetDate: string; hostPoolId?: string }) => {
+  const submit = async (v: { name: string; meetDate: string; hostPoolId?: string; laneCount?: number }) => {
     try {
-      await create.mutateAsync({ name: v.name, meetDate: new Date(v.meetDate).toISOString(), hostPoolId: v.hostPoolId ?? null });
+      await create.mutateAsync({ name: v.name, meetDate: new Date(v.meetDate).toISOString(), hostPoolId: v.hostPoolId ?? null, laneCount: v.laneCount ? Number(v.laneCount) : undefined });
       form.resetFields();
       setOpen(false);
       message.success('赛事已创建');
@@ -48,6 +48,7 @@ export function MeetsListPage() {
           <Form.Item name="hostPoolId" label="主办泳池（场地，可选）">
             <Select allowClear placeholder="可选" options={(pools.data ?? []).map((p) => ({ value: p.id, label: p.name }))} />
           </Form.Item>
+          <Form.Item name="laneCount" label="泳道数" initialValue={6}><Input type="number" min={1} max={20} /></Form.Item>
         </Form>
       </Modal>
     </Card>

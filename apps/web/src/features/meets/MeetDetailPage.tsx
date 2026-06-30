@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import type { EntryItem, ResultStatus, StandingsGroup, Stroke } from '@swim/shared';
 import {
-  useMeet, useAddRaceEvent, usePools, useEntries, useAddEntry, useSetResult, useStandings,
+  useMeet, useAddRaceEvent, usePools, useEntries, useAddEntry, useSetResult, useStandings, useSeedEvent,
 } from '../../lib/queries';
 import * as ep from '../../lib/api/endpoints';
 import { STROKE_LABELS, RESULT_STATUS_LABELS, formatSwimTime, parseSwimTime } from '../../lib/swim-time';
@@ -65,6 +65,29 @@ function StandingsView({ groups }: { groups: StandingsGroup[] }) {
   );
 }
 
+function StartList({ entries }: { entries: EntryItem[] }) {
+  const seeded = entries.filter((e) => e.heat != null);
+  if (!seeded.length) return <Empty description="尚未排道，点击「排道」生成出发名单" />;
+  const heats = [...new Set(seeded.map((e) => e.heat as number))].sort((a, b) => a - b);
+  return (
+    <Space direction="vertical" style={{ width: '100%' }}>
+      {heats.map((h) => (
+        <Card key={h} size="small" title={`第 ${h} 组`}>
+          <Table
+            rowKey="id" size="small" pagination={false}
+            dataSource={seeded.filter((e) => e.heat === h).sort((a, b) => (a.lane as number) - (b.lane as number))}
+            columns={[
+              { title: '道次', dataIndex: 'lane', width: 70 },
+              { title: '姓名', dataIndex: 'name', render: (v: string | null, r: any) => v ?? r.email },
+              { title: '种子成绩', dataIndex: 'seedTimeMs', render: (ms: number | null) => formatSwimTime(ms) },
+            ]}
+          />
+        </Card>
+      ))}
+    </Space>
+  );
+}
+
 export function MeetDetailPage() {
   const { meetId = '' } = useParams();
   const { message } = App.useApp();
@@ -79,8 +102,14 @@ export function MeetDetailPage() {
   const [regSwimmer, setRegSwimmer] = useState<string | undefined>();
   const swimmers = useQuery({ queryKey: ['swimmers', regPool, 1], queryFn: () => ep.listSwimmers(regPool!, 1), enabled: !!regPool });
   const addEntry = useAddEntry(selectedEvent ?? '', meetId);
+  const seed = useSeedEvent(selectedEvent ?? '');
   const entries = useEntries(selectedEvent);
   const standings = useStandings(selectedEvent);
+
+  const runSeed = async () => {
+    try { await seed.mutateAsync(); message.success('已排道'); }
+    catch (e: any) { message.error(e?.response?.data?.message ?? '排道失败'); }
+  };
 
   const submitEvent = async (v: { distanceMeters: number; stroke: Stroke }) => {
     try { await addEvent.mutateAsync({ distanceMeters: Number(v.distanceMeters), stroke: v.stroke }); eventForm.resetFields(); setEventOpen(false); }
@@ -140,6 +169,10 @@ export function MeetDetailPage() {
               locale={{ emptyText: '还没有报名' }}
               renderItem={(en) => <EntryRow key={en.id} entry={en} eventId={selectedEvent} />}
             />
+          </Card>
+
+          <Card title="出发名单（分组泳道）" loading={entries.isLoading} extra={<Button onClick={runSeed} loading={seed.isPending}>排道</Button>}>
+            <StartList entries={entries.data ?? []} />
           </Card>
 
           <Card title="排行榜（按 性别 / 年龄组）" loading={standings.isLoading}>

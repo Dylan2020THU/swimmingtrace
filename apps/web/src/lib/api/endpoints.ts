@@ -81,6 +81,7 @@ export const deleteEntry = (enid: string) => api.delete(`/entries/${enid}`).then
 export const setEntryResult = (enid: string, b: SetResultDto) =>
   api.patch<EntryItem>(`/entries/${enid}/result`, b).then((r) => r.data);
 export const getStandings = (eid: string) => api.get<StandingsGroup[]>(`/events/${eid}/standings`).then((r) => r.data);
+export const seedEvent = (eid: string) => api.post<EntryItem[]>(`/events/${eid}/seed`).then((r) => r.data);
 
 export const getOverview = () => api.get<OverviewStats>('/stats/overview').then((r) => r.data);
 export const getPoolStats = (id: string) => api.get<PoolStats>(`/stats/pool/${id}`).then((r) => r.data);
