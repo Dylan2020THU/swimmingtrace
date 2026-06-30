@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { CreateEntryBody, CreateMeetBody, CreateRaceEventBody, MeetsService, SetResultBody } from './meets.service';
+import { CreateEntryBody, CreateMeetBody, CreateRaceEventBody, MeetsService, SetPublishedBody, SetResultBody } from './meets.service';
 import { CurrentUser, JwtAuthGuard, Roles, RolesGuard } from '../common/auth.common';
 
 type U = { id: string };
@@ -33,6 +33,12 @@ export class MeetsController {
   @HttpCode(200)
   removeMeet(@CurrentUser() u: U, @Param('id') id: string) {
     return this.meets.deleteMeet(u.id, id);
+  }
+
+  @Post('meets/:id/publish')
+  @HttpCode(200)
+  publish(@CurrentUser() u: U, @Param('id') id: string, @Body() dto: SetPublishedBody) {
+    return this.meets.setPublished(u.id, id, dto.published);
   }
 
   @Post('meets/:id/events')
