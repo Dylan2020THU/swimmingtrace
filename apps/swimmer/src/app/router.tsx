@@ -10,6 +10,7 @@ import { RecordPage } from '../features/record/RecordPage';
 import { HistoryPage } from '../features/history/HistoryPage';
 import { ProfilePage } from '../features/profile/ProfilePage';
 import { ChallengesPage } from '../features/challenges/ChallengesPage';
+import { MeetsPage } from '../features/meets/MeetsPage';
 import { NearbyPoolsPage } from '../features/nearby/NearbyPoolsPage';
 
 export function AppRouter() {
@@ -24,6 +25,7 @@ export function AppRouter() {
           <Route element={<AppShell />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/challenges" element={<ChallengesPage />} />
+            <Route path="/meets" element={<MeetsPage />} />
             <Route path="/record" element={<RecordPage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/nearby" element={<NearbyPoolsPage />} />

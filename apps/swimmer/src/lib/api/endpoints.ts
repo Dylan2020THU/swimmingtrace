@@ -3,6 +3,7 @@ import { idempotencyKey } from '../idempotency';
 import type {
   LoginResponse, MeResponse, ClaimInfoResponse, ClaimAccountDto,
   MyPoolItem, CreateSessionDto, SwimSessionItem, HeatmapCell, SwimmerStats, MyChallengeItem, NearbyPlace, Paginated,
+  MyMeet, SelfEntryDto, EntryItem, UpdateProfileDto,
 } from '@swim/shared';
 
 export const login = (b: { email: string; password: string }) =>
@@ -32,3 +33,12 @@ export const getMyHeatmap = (year?: number) =>
 export const getMyChallenges = () => api.get<MyChallengeItem[]>('/me/challenges').then((r) => r.data);
 export const getNearbyPlaces = (lat: number, lng: number, radiusMeters = 5000) =>
   api.get<NearbyPlace[]>('/places/nearby', { params: { lat, lng, radiusMeters } }).then((r) => r.data);
+
+// self-registration (E4)
+export const getMyMeets = () => api.get<MyMeet[]>('/me/meets').then((r) => r.data);
+export const selfRegister = (eventId: string, b: SelfEntryDto) =>
+  api.post<EntryItem>(`/me/meets/events/${eventId}/entries`, b, { headers: { 'Idempotency-Key': idempotencyKey() } }).then((r) => r.data);
+export const withdrawEntry = (entryId: string) =>
+  api.delete(`/me/meets/entries/${entryId}`).then((r) => r.data);
+export const updateProfile = (b: UpdateProfileDto) =>
+  api.patch<{ gender: string | null; birthDate: string | null }>('/me/profile', b).then((r) => r.data);

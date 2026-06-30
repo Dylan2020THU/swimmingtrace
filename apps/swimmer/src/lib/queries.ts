@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CreateSessionDto } from '@swim/shared';
+import type { CreateSessionDto, SelfEntryDto, UpdateProfileDto } from '@swim/shared';
 import * as ep from './api/endpoints';
 
 export const queryKeys = {
@@ -8,6 +8,7 @@ export const queryKeys = {
   myHeatmap: (year: number) => ['myHeatmap', year] as const,
   mySessions: ['mySessions'] as const,
   myChallenges: ['myChallenges'] as const,
+  myMeets: ['myMeets'] as const,
 };
 
 export const useMyChallenges = () => useQuery({ queryKey: queryKeys.myChallenges, queryFn: ep.getMyChallenges });
@@ -40,5 +41,32 @@ export function useRecordSession() {
       qc.invalidateQueries({ queryKey: queryKeys.mySessions });
       qc.invalidateQueries({ queryKey: ['myHeatmap'] });
     },
+  });
+}
+
+// self-registration (E4)
+export const useMyMeets = () => useQuery({ queryKey: queryKeys.myMeets, queryFn: ep.getMyMeets });
+
+export function useSelfRegister() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ eventId, b }: { eventId: string; b: SelfEntryDto }) => ep.selfRegister(eventId, b),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.myMeets }),
+  });
+}
+
+export function useWithdrawEntry() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (entryId: string) => ep.withdrawEntry(entryId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.myMeets }),
+  });
+}
+
+export function useUpdateProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (b: UpdateProfileDto) => ep.updateProfile(b),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.myMeets }),
   });
 }
