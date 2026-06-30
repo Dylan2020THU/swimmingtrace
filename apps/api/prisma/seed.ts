@@ -91,6 +91,9 @@ async function main() {
     await prisma.registration.deleteMany({ where: { swimmerId: { in: existingIds } } });
     // Challenges reference the owner's pools — clear them before the pools (FK).
     await prisma.challenge.deleteMany({ where: { pool: { owner: { email: OWNER_EMAIL } } } });
+    // Meets cascade to race events + entries; seasons + meets reference the owner.
+    await prisma.meet.deleteMany({ where: { owner: { email: OWNER_EMAIL } } });
+    await prisma.season.deleteMany({ where: { owner: { email: OWNER_EMAIL } } });
     await prisma.pool.deleteMany({ where: { owner: { email: OWNER_EMAIL } } });
     await prisma.user.deleteMany({ where: { id: { in: existingIds } } });
   }
@@ -166,9 +169,50 @@ async function main() {
   }
   await prisma.swimSession.createMany({ data: sessionData });
 
+  // --- Challenges (one running per active pool) ---------------------------
+  await prisma.challenge.createMany({
+    data: [
+      { poolId: sunrise.id, name: '夏季 100 公里挑战', goalDistanceMeters: 100000, startDate: new Date(today.getTime() - 30 * DAY_MS), endDate: new Date(today.getTime() + 30 * DAY_MS) },
+      { poolId: moonlight.id, name: '月度 50 公里冲刺', goalDistanceMeters: 50000, startDate: new Date(today.getTime() - 15 * DAY_MS), endDate: new Date(today.getTime() + 15 * DAY_MS) },
+    ],
+  });
+
+  // --- Season + a published meet with recorded results --------------------
+  // Drives standings (gender×age-group medals), season points + club records,
+  // and the public pages (/p/meets/:id, /p/seasons/:id).
+  const season = await prisma.season.create({
+    data: { ownerId: owner.id, name: '2026 春季系列赛', referenceDate: new Date(Date.UTC(THIS_YEAR, 0, 1)), published: true },
+  });
+  const meet = await prisma.meet.create({
+    data: {
+      ownerId: owner.id, name: '春季城市公开赛', meetDate: new Date(today.getTime() - 14 * DAY_MS),
+      hostPoolId: sunrise.id, laneCount: 6, published: true, seasonId: season.id,
+    },
+  });
+  const events = await Promise.all(
+    ([
+      { distanceMeters: 50, stroke: 'FREE', order: 0 },
+      { distanceMeters: 100, stroke: 'FREE', order: 1 },
+      { distanceMeters: 50, stroke: 'BACK', order: 2 },
+    ] as const).map((e) => prisma.raceEvent.create({ data: { meetId: meet.id, ...e } })),
+  );
+  // Enter the first 30 generated members (all have gender + birthDate) into every event.
+  const entrants = swimmers.slice(NAMED.length, NAMED.length + 30);
+  const baseMs = [30000, 65000, 34000]; // ~ 50自 / 100自 / 50仰 winning times
+  const entryData = events.flatMap((ev, ei) =>
+    entrants.map((sw, k) => {
+      // A few realistic non-finishers.
+      const resultStatus = k % 17 === 0 ? 'DNS' : k % 19 === 0 ? 'DQ' : 'OK';
+      const resultTimeMs = resultStatus === 'OK' ? baseMs[ei] + k * 220 + (k % 5) * 90 : null;
+      return { raceEventId: ev.id, swimmerId: sw.id, seedTimeMs: baseMs[ei] + k * 200, resultTimeMs, resultStatus: resultStatus as 'OK' | 'DNS' | 'DQ' };
+    }),
+  );
+  await prisma.meetEntry.createMany({ data: entryData });
+
   console.log(
     `Seed done: owner=${OWNER_EMAIL} / ${OWNER_PASSWORD}, ` +
-      `pools=3 (1 archived), swimmers=${SWIMMERS.length} (${GENERATED.length} generated w/ demographics), sessions=${sessionData.length}`,
+      `pools=3 (1 archived), swimmers=${SWIMMERS.length} (${GENERATED.length} generated w/ demographics), sessions=${sessionData.length}, ` +
+      `challenges=2, season='${season.name}' (published), meet='${meet.name}' (published, ${events.length} events, ${entryData.length} entries w/ results)`,
   );
 }
 
