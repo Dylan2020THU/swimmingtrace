@@ -12,6 +12,7 @@ import { ChallengeDetailPage } from '../features/challenges/ChallengeDetailPage'
 import { AccountPage } from '../features/account/AccountPage';
 import { MeetsListPage } from '../features/meets/MeetsListPage';
 import { MeetDetailPage } from '../features/meets/MeetDetailPage';
+import { MeetPublicPage } from '../features/meets/MeetPublicPage';
 
 export function AppRouter() {
   return (
@@ -21,6 +22,7 @@ export function AppRouter() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/p/meets/:meetId" element={<MeetPublicPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="/" element={<Navigate to="/pools" replace />} />

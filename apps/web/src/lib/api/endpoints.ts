@@ -8,6 +8,7 @@ import type {
   ApiKeyListItem, CreatedApiKey,
   MeetSummary, MeetDetail, RaceEventItem, EntryItem, StandingsGroup,
   CreateMeetDto, CreateRaceEventDto, CreateEntryDto, SetResultDto,
+  PublicMeet, PublicStartListHeat,
 } from '@swim/shared';
 
 export const login = (b: { email: string; password: string }) =>
@@ -82,6 +83,11 @@ export const setEntryResult = (enid: string, b: SetResultDto) =>
   api.patch<EntryItem>(`/entries/${enid}/result`, b).then((r) => r.data);
 export const getStandings = (eid: string) => api.get<StandingsGroup[]>(`/events/${eid}/standings`).then((r) => r.data);
 export const seedEvent = (eid: string) => api.post<EntryItem[]>(`/events/${eid}/seed`).then((r) => r.data);
+export const publishMeet = (id: string, published: boolean) =>
+  api.post<{ published: boolean }>(`/meets/${id}/publish`, { published }).then((r) => r.data);
+export const getPublicMeet = (id: string) => api.get<PublicMeet>(`/public/meets/${id}`).then((r) => r.data);
+export const getPublicStartList = (eid: string) => api.get<PublicStartListHeat[]>(`/public/events/${eid}/startlist`).then((r) => r.data);
+export const getPublicResults = (eid: string) => api.get<StandingsGroup[]>(`/public/events/${eid}/results`).then((r) => r.data);
 
 export const getOverview = () => api.get<OverviewStats>('/stats/overview').then((r) => r.data);
 export const getPoolStats = (id: string) => api.get<PoolStats>(`/stats/pool/${id}`).then((r) => r.data);
