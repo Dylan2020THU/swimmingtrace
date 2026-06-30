@@ -55,4 +55,22 @@ describe('Owner flows (e2e)', () => {
     // Validates the real heatmap SQL (date_trunc + to_char + AT TIME ZONE) against Postgres.
     expect(stats.body.heatmap).toContainEqual({ date: day, distanceMeters: 1000 });
   });
+
+  it('名册筛选：gender / status / q（服务端）', async () => {
+    const a = (await reg('owner3@x.com')).body.accessToken;
+    const auth = (r: request.Test) => r.set('Authorization', `Bearer ${a}`);
+    const pool = (await auth(request(app.getHttpServer()).post('/pools').send({ name: 'F-Pool' })).expect(201)).body;
+    await auth(request(app.getHttpServer()).post(`/pools/${pool.id}/swimmers`).send({ email: 'mike@x.com', name: 'Mike', gender: 'MALE', birthDate: '2012-01-01' })).expect(201);
+    const fiona = (await auth(request(app.getHttpServer()).post(`/pools/${pool.id}/swimmers`).send({ email: 'fiona@x.com', name: 'Fiona', gender: 'FEMALE', birthDate: '2011-01-01' })).expect(201)).body;
+    await auth(request(app.getHttpServer()).patch(`/pools/${pool.id}/swimmers/${fiona.swimmerId}`).send({ status: 'INACTIVE' })).expect(200);
+
+    const males = (await auth(request(app.getHttpServer()).get(`/pools/${pool.id}/swimmers?gender=MALE`)).expect(200)).body;
+    expect(males.items.map((s: { email: string }) => s.email)).toEqual(['mike@x.com']);
+
+    const inactive = (await auth(request(app.getHttpServer()).get(`/pools/${pool.id}/swimmers?status=INACTIVE`)).expect(200)).body;
+    expect(inactive.items.map((s: { email: string }) => s.email)).toEqual(['fiona@x.com']);
+
+    const search = (await auth(request(app.getHttpServer()).get(`/pools/${pool.id}/swimmers?q=fio`)).expect(200)).body;
+    expect(search.items.map((s: { email: string }) => s.email)).toEqual(['fiona@x.com']);
+  });
 });

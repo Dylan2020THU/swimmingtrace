@@ -54,7 +54,10 @@ export interface ChallengeSummary {
   goalDistanceMeters: number; startDate: string; endDate: string;
   totalDistanceMeters: number; // window-total distance for the pool
 }
-export interface LeaderboardRow { swimmerId: string; name: string | null; email: string; distanceMeters: number; }
+export interface LeaderboardRow {
+  swimmerId: string; name: string | null; email: string; distanceMeters: number;
+  gender: Gender | null; birthDate: string | null; sessionCount: number; status: RegistrationStatus;
+}
 export interface ChallengeDetail extends ChallengeSummary { leaderboard: LeaderboardRow[]; }
 export interface ActiveChallengeItem extends ChallengeSummary { poolName: string; }
 
@@ -123,6 +126,33 @@ export type Gender = 'MALE' | 'FEMALE';
 export type Stroke = 'FREE' | 'BACK' | 'BREAST' | 'FLY' | 'IM';
 export type ResultStatus = 'ENTERED' | 'OK' | 'DNS' | 'DNF' | 'DQ';
 export type Medal = 'gold' | 'silver' | 'bronze';
+
+// age groups — shared by the meets domain (standings/records) and owner member tables.
+export interface AgeBand { label: string; minAge?: number; maxAge?: number; }
+/** Standard swim age bands, computed by actual age on a reference date. Tunable. */
+export const AGE_GROUPS: AgeBand[] = [
+  { label: '10及以下', maxAge: 10 },
+  { label: '11-12', minAge: 11, maxAge: 12 },
+  { label: '13-14', minAge: 13, maxAge: 14 },
+  { label: '15-17', minAge: 15, maxAge: 17 },
+  { label: '18及以上', minAge: 18 },
+];
+/** Whole-years age of `birthDate` as of `on` (UTC). */
+export function ageAt(birthDate: Date, on: Date): number {
+  let age = on.getUTCFullYear() - birthDate.getUTCFullYear();
+  const m = on.getUTCMonth() - birthDate.getUTCMonth();
+  if (m < 0 || (m === 0 && on.getUTCDate() < birthDate.getUTCDate())) age--;
+  return age;
+}
+export function ageGroupOf(birthDate: Date, on: Date): string {
+  const age = ageAt(birthDate, on);
+  for (const b of AGE_GROUPS) {
+    if ((b.minAge === undefined || age >= b.minAge) && (b.maxAge === undefined || age <= b.maxAge)) {
+      return b.label;
+    }
+  }
+  return AGE_GROUPS[AGE_GROUPS.length - 1].label;
+}
 
 export interface MeetSummary {
   id: string; name: string; meetDate: string;

@@ -61,13 +61,16 @@ describe('ChallengesService.detail', () => {
     const prisma: any = {
       challenge: { findUnique: jest.fn().mockResolvedValue(c) },
       $queryRaw: jest.fn().mockResolvedValue([
-        { swimmerId: 's1', name: 'A', email: 'a@x', distanceMeters: BigInt(5000) },
-        { swimmerId: 's2', name: 'B', email: 'b@x', distanceMeters: BigInt(3000) },
+        { swimmerId: 's1', name: 'A', email: 'a@x', gender: 'MALE', birthDate: new Date('2012-03-01T00:00:00.000Z'), distanceMeters: BigInt(5000), sessionCount: 3, status: 'ACTIVE' },
+        { swimmerId: 's2', name: 'B', email: 'b@x', gender: null, birthDate: null, distanceMeters: BigInt(3000), sessionCount: 2, status: 'INACTIVE' },
       ]),
     };
     const res = await new ChallengesService(prisma, mkBilling()).detail('o1', 'c1');
-    expect(res.leaderboard[0]).toEqual({ swimmerId: 's1', name: 'A', email: 'a@x', distanceMeters: 5000 });
-    expect(res.leaderboard[1].distanceMeters).toBe(3000);
+    expect(res.leaderboard[0]).toEqual({
+      swimmerId: 's1', name: 'A', email: 'a@x', gender: 'MALE', birthDate: '2012-03-01T00:00:00.000Z',
+      distanceMeters: 5000, sessionCount: 3, status: 'ACTIVE',
+    });
+    expect(res.leaderboard[1]).toMatchObject({ distanceMeters: 3000, gender: null, birthDate: null, sessionCount: 2, status: 'INACTIVE' });
     expect(res.totalDistanceMeters).toBe(8000);
   });
 
