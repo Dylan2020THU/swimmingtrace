@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { IsDateString, IsInt, IsString, Min } from 'class-validator';
 import { PrismaService } from '../prisma.service';
-import { ActiveChallengeItem, ChallengeDetail, ChallengeSummary, CreateChallengeDto, LeaderboardRow } from '@swim/shared';
+import { ActiveChallengeItem, ChallengeDetail, ChallengeSummary, CreateChallengeDto, Gender, LeaderboardRow, RegistrationStatus } from '@swim/shared';
 import { assertOwnsChallenge, assertOwnsPool } from '../common/ownership';
 import { BillingService } from '../billing/billing.service';
 
@@ -31,19 +31,36 @@ export class ChallengesService {
     });
   }
 
-  /** Per-swimmer distance leaderboard for a pool window, descending. Shared by detail + myChallenges. */
+  /** Per-swimmer distance leaderboard for a pool window, descending. Shared by detail + myChallenges.
+   *  Enriched with demographics (gender/birthDate), window session count, and membership status. */
   async leaderboardOf(poolId: string, start: Date, end: Date): Promise<LeaderboardRow[]> {
     const rows = await this.prisma.$queryRaw<
-      { swimmerId: string; name: string | null; email: string; distanceMeters: bigint }[]
+      {
+        swimmerId: string; name: string | null; email: string;
+        gender: Gender | null; birthDate: Date | null;
+        distanceMeters: bigint; sessionCount: number; status: RegistrationStatus | null;
+      }[]
     >(Prisma.sql`
       SELECT s."swimmerId" AS "swimmerId", u."name" AS "name", u."email" AS "email",
-             SUM(s."distanceMeters") AS "distanceMeters"
+             u."gender" AS "gender", u."birthDate" AS "birthDate",
+             SUM(s."distanceMeters") AS "distanceMeters", COUNT(s.*)::int AS "sessionCount",
+             r."status" AS "status"
       FROM "SwimSession" s
       JOIN "User" u ON u."id" = s."swimmerId"
+      LEFT JOIN "Registration" r ON r."swimmerId" = s."swimmerId" AND r."poolId" = ${poolId}
       WHERE s."poolId" = ${poolId} AND s."swamAt" >= ${start} AND s."swamAt" < ${end}
-      GROUP BY s."swimmerId", u."name", u."email"
+      GROUP BY s."swimmerId", u."name", u."email", u."gender", u."birthDate", r."status"
       ORDER BY SUM(s."distanceMeters") DESC, s."swimmerId" ASC`);
-    return rows.map((r) => ({ swimmerId: r.swimmerId, name: r.name, email: r.email, distanceMeters: Number(r.distanceMeters) }));
+    return rows.map((r) => ({
+      swimmerId: r.swimmerId,
+      name: r.name,
+      email: r.email,
+      gender: r.gender ?? null,
+      birthDate: r.birthDate ? r.birthDate.toISOString() : null,
+      distanceMeters: Number(r.distanceMeters),
+      sessionCount: Number(r.sessionCount),
+      status: r.status ?? 'ACTIVE',
+    }));
   }
 
   private toSummary(c: { id: string; poolId: string; name: string; goalDistanceMeters: number; startDate: Date; endDate: Date }, total: number): ChallengeSummary {

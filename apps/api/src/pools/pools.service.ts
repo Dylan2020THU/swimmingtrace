@@ -1,7 +1,8 @@
 import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IsDateString, IsEmail, IsEnum, IsIn, IsInt, IsLatitude, IsLongitude, IsOptional, IsString, IsUUID, Min } from 'class-validator';
-import { Gender } from '@swim/shared';
+import { Prisma } from '@prisma/client';
+import { Gender, RegistrationStatus } from '@swim/shared';
 import { PrismaService } from '../prisma.service';
 import { MailService } from '../mail/mail.service';
 import { BillingService } from '../billing/billing.service';
@@ -131,18 +132,32 @@ export class PoolsService {
     poolId: string,
     page?: number,
     pageSize?: number,
+    filter?: { gender?: Gender; status?: RegistrationStatus; q?: string },
   ): Promise<Paginated<SwimmerListItem>> {
     await assertOwnsPool(this.prisma, ownerId, poolId);
     const { skip, take, page: p, pageSize: ps } = paginate(page, pageSize);
+    const swimmerWhere: Prisma.UserWhereInput = {};
+    if (filter?.gender) swimmerWhere.gender = filter.gender;
+    if (filter?.q) {
+      swimmerWhere.OR = [
+        { name: { contains: filter.q, mode: 'insensitive' } },
+        { email: { contains: filter.q, mode: 'insensitive' } },
+      ];
+    }
+    const where: Prisma.RegistrationWhereInput = {
+      poolId,
+      ...(filter?.status ? { status: filter.status } : {}),
+      ...(Object.keys(swimmerWhere).length ? { swimmer: swimmerWhere } : {}),
+    };
     const [regs, total] = await Promise.all([
       this.prisma.registration.findMany({
-        where: { poolId },
+        where,
         include: { swimmer: { select: { id: true, name: true, email: true, claimedAt: true, gender: true, birthDate: true } } },
         orderBy: { joinedAt: 'desc' },
         skip,
         take,
       }),
-      this.prisma.registration.count({ where: { poolId } }),
+      this.prisma.registration.count({ where }),
     ]);
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const items = await Promise.all(

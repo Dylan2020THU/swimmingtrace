@@ -17,6 +17,7 @@ import {
   Roles,
   RolesGuard,
 } from '../common/auth.common';
+import type { Gender, RegistrationStatus } from '@swim/shared';
 
 type AuthedUser = { id: string; role: Role };
 
@@ -57,8 +58,21 @@ export class PoolsController {
 
   @Get(':id/swimmers')
   @Roles(Role.OWNER)
-  swimmers(@Param('id') poolId: string, @CurrentUser() user: AuthedUser, @Query() q: PaginationQuery) {
-    return this.pools.listSwimmers(user.id, poolId, q.page, q.pageSize);
+  swimmers(
+    @Param('id') poolId: string,
+    @CurrentUser() user: AuthedUser,
+    @Query() q: PaginationQuery,
+    @Query('gender') gender?: string,
+    @Query('status') status?: string,
+    @Query('q') search?: string,
+  ) {
+    // Whitelist enum filters so an invalid value just means "no filter" (not a Prisma error).
+    const filter = {
+      gender: gender === 'MALE' || gender === 'FEMALE' ? (gender as Gender) : undefined,
+      status: status === 'ACTIVE' || status === 'INACTIVE' ? (status as RegistrationStatus) : undefined,
+      q: search?.trim() ? search.trim() : undefined,
+    };
+    return this.pools.listSwimmers(user.id, poolId, q.page, q.pageSize, filter);
   }
 
   @Patch(':id')

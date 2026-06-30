@@ -146,6 +146,29 @@ describe('PoolsService.listSwimmers', () => {
     expect(res).toMatchObject({ total: 1, page: 1, pageSize: 20 });
     expect(res.items[0]).toMatchObject({ swimmerId: 's1', email: 'a@b.c', status: 'ACTIVE', mileageLast30dMeters: 700 });
   });
+
+  it('筛选：gender/status/q 组装到 where（findMany 与 count 同 where）', async () => {
+    const prisma: any = {
+      pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
+      registration: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) },
+      swimSession: { aggregate: jest.fn() },
+    };
+    const svc = new PoolsService(prisma, { get: () => undefined } as any, mkMail(), mkBilling());
+    await svc.listSwimmers('o1', 'p1', 1, 20, { gender: 'FEMALE', status: 'INACTIVE', q: 'sam' });
+    const expectedWhere = {
+      poolId: 'p1',
+      status: 'INACTIVE',
+      swimmer: {
+        gender: 'FEMALE',
+        OR: [
+          { name: { contains: 'sam', mode: 'insensitive' } },
+          { email: { contains: 'sam', mode: 'insensitive' } },
+        ],
+      },
+    };
+    expect(prisma.registration.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expectedWhere }));
+    expect(prisma.registration.count).toHaveBeenCalledWith({ where: expectedWhere });
+  });
 });
 
 describe('PoolsService.setMembershipStatus', () => {
