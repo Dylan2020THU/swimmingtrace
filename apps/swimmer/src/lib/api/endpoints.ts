@@ -3,7 +3,7 @@ import { idempotencyKey } from '../idempotency';
 import type {
   LoginResponse, MeResponse, ClaimInfoResponse, ClaimAccountDto,
   MyPoolItem, CreateSessionDto, SwimSessionItem, HeatmapCell, SwimmerStats, MyChallengeItem, NearbyPlace, Paginated,
-  MyMeet, SelfEntryDto, EntryItem, UpdateProfileDto,
+  MyMeet, SelfEntryDto, EntryItem, UpdateProfileDto, PbRow,
 } from '@swim/shared';
 
 export const login = (b: { email: string; password: string }) =>
@@ -42,3 +42,6 @@ export const withdrawEntry = (entryId: string) =>
   api.delete(`/me/meets/entries/${entryId}`).then((r) => r.data);
 export const updateProfile = (b: UpdateProfileDto) =>
   api.patch<{ gender: string | null; birthDate: string | null }>('/me/profile', b).then((r) => r.data);
+
+// records (E5) — my personal bests
+export const getMyRecords = () => api.get<PbRow[]>('/me/records').then((r) => r.data);

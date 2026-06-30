@@ -17,6 +17,7 @@ export const handlers = [
   http.get('/api/account/plan', () =>
     HttpResponse.json({ plan: 'FREE', limits: { maxPools: 1, maxMembers: 25 }, usage: { pools: 0, members: 0 }, features: { export: false, challenges: false, apiKeys: false } })),
   http.get('/api/api-keys', () => HttpResponse.json([])),
+  http.get('/api/seasons', () => HttpResponse.json([])),
 ];
 
 export const server = setupServer(...handlers);

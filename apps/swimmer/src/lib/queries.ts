@@ -9,7 +9,10 @@ export const queryKeys = {
   mySessions: ['mySessions'] as const,
   myChallenges: ['myChallenges'] as const,
   myMeets: ['myMeets'] as const,
+  myRecords: ['myRecords'] as const,
 };
+
+export const useMyRecords = () => useQuery({ queryKey: queryKeys.myRecords, queryFn: ep.getMyRecords });
 
 export const useMyChallenges = () => useQuery({ queryKey: queryKeys.myChallenges, queryFn: ep.getMyChallenges });
 

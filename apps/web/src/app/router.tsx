@@ -13,6 +13,10 @@ import { AccountPage } from '../features/account/AccountPage';
 import { MeetsListPage } from '../features/meets/MeetsListPage';
 import { MeetDetailPage } from '../features/meets/MeetDetailPage';
 import { MeetPublicPage } from '../features/meets/MeetPublicPage';
+import { SeasonsListPage } from '../features/seasons/SeasonsListPage';
+import { SeasonDetailPage } from '../features/seasons/SeasonDetailPage';
+import { SeasonPublicPage } from '../features/seasons/SeasonPublicPage';
+import { RecordsPage } from '../features/records/RecordsPage';
 
 export function AppRouter() {
   return (
@@ -23,6 +27,7 @@ export function AppRouter() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/p/meets/:meetId" element={<MeetPublicPage />} />
+        <Route path="/p/seasons/:seasonId" element={<SeasonPublicPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="/" element={<Navigate to="/pools" replace />} />
@@ -33,6 +38,9 @@ export function AppRouter() {
             <Route path="/account" element={<AccountPage />} />
             <Route path="/meets" element={<MeetsListPage />} />
             <Route path="/meets/:meetId" element={<MeetDetailPage />} />
+            <Route path="/seasons" element={<SeasonsListPage />} />
+            <Route path="/seasons/:seasonId" element={<SeasonDetailPage />} />
+            <Route path="/records" element={<RecordsPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/pools" replace />} />

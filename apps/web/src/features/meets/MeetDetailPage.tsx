@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import type { EntryItem, ResultStatus, StandingsGroup, Stroke } from '@swim/shared';
 import {
-  useMeet, useAddRaceEvent, usePools, useEntries, useAddEntry, useSetResult, useStandings, useSeedEvent, usePublishMeet, useSetMeetRegistration,
+  useMeet, useAddRaceEvent, usePools, useEntries, useAddEntry, useSetResult, useStandings, useSeedEvent, usePublishMeet, useSetMeetRegistration, useSeasons, useSetMeetSeason,
 } from '../../lib/queries';
 import * as ep from '../../lib/api/endpoints';
 import { STROKE_LABELS, RESULT_STATUS_LABELS, formatSwimTime, parseSwimTime } from '../../lib/swim-time';
@@ -124,6 +124,13 @@ export function MeetDetailPage() {
     catch (e: any) { message.error(e?.response?.data?.message ?? '操作失败'); }
   };
 
+  const seasons = useSeasons();
+  const setSeason = useSetMeetSeason(meetId);
+  const onSeason = async (seasonId?: string) => {
+    try { await setSeason.mutateAsync(seasonId ?? null); message.success('已更新所属赛季'); }
+    catch (e: any) { message.error(e?.response?.data?.message ?? '操作失败'); }
+  };
+
   const submitEvent = async (v: { distanceMeters: number; stroke: Stroke }) => {
     try { await addEvent.mutateAsync({ distanceMeters: Number(v.distanceMeters), stroke: v.stroke }); eventForm.resetFields(); setEventOpen(false); }
     catch (e: any) { message.error(e?.response?.data?.message ?? '添加失败'); }
@@ -158,10 +165,24 @@ export function MeetDetailPage() {
         }
       >
         {m && (
-          <Typography.Text type="secondary">
-            {new Date(m.meetDate).toLocaleDateString()}
-            {m.hostPoolName ? ` · ${m.hostPoolName}` : ''}
-          </Typography.Text>
+          <>
+            <Typography.Text type="secondary">
+              {new Date(m.meetDate).toLocaleDateString()}
+              {m.hostPoolName ? ` · ${m.hostPoolName}` : ''}
+            </Typography.Text>
+            <div style={{ marginTop: 8 }}>
+              <span style={{ color: 'var(--text-secondary)', marginRight: 8 }}>所属赛季</span>
+              <Select
+                style={{ width: 220 }}
+                allowClear
+                placeholder="未归入赛季"
+                value={m.seasonId ?? undefined}
+                loading={setSeason.isPending}
+                onChange={(v) => onSeason(v)}
+                options={(seasons.data ?? []).map((s) => ({ value: s.id, label: s.name }))}
+              />
+            </div>
+          </>
         )}
       </Card>
 

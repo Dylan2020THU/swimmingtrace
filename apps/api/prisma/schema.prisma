@@ -66,6 +66,7 @@ model User {
   idempotencyKeys IdempotencyKey[]
   apiKeys       ApiKey[]
   meets         Meet[]         @relation("MeetOwner")
+  seasons       Season[]       @relation("SeasonOwner")
   meetEntries   MeetEntry[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -189,8 +190,26 @@ model Meet {
   laneCount  Int         @default(6)
   published  Boolean     @default(false)
   registrationOpen Boolean @default(false)
+  seasonId   String?
+  season     Season?     @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   events     RaceEvent[]
   createdAt  DateTime    @default(now())
+
+  @@index([ownerId])
+  @@index([seasonId])
+}
+
+// A season / meet series: meets grouped for a cross-meet points leaderboard.
+// referenceDate fixes each swimmer's age group for the whole season (no mid-season drift).
+model Season {
+  id            String   @id @default(uuid())
+  ownerId       String
+  owner         User     @relation("SeasonOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  name          String
+  referenceDate DateTime
+  published     Boolean  @default(false)
+  meets         Meet[]
+  createdAt     DateTime @default(now())
 
   @@index([ownerId])
 }

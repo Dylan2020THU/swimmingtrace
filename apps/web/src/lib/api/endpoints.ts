@@ -9,6 +9,7 @@ import type {
   MeetSummary, MeetDetail, RaceEventItem, EntryItem, StandingsGroup,
   CreateMeetDto, CreateRaceEventDto, CreateEntryDto, SetResultDto,
   PublicMeet, PublicStartListHeat,
+  SeasonSummary, SeasonDetail, CreateSeasonDto, RecordRow, PublicSeason,
 } from '@swim/shared';
 
 export const login = (b: { email: string; password: string }) =>
@@ -90,6 +91,19 @@ export const setMeetRegistration = (id: string, registrationOpen: boolean) =>
 export const getPublicMeet = (id: string) => api.get<PublicMeet>(`/public/meets/${id}`).then((r) => r.data);
 export const getPublicStartList = (eid: string) => api.get<PublicStartListHeat[]>(`/public/events/${eid}/startlist`).then((r) => r.data);
 export const getPublicResults = (eid: string) => api.get<StandingsGroup[]>(`/public/events/${eid}/results`).then((r) => r.data);
+
+// seasons & records (E5)
+export const listSeasons = () => api.get<SeasonSummary[]>('/seasons').then((r) => r.data);
+export const getSeason = (id: string) => api.get<SeasonDetail>(`/seasons/${id}`).then((r) => r.data);
+export const createSeason = (b: CreateSeasonDto) => api.post<SeasonSummary>('/seasons', b).then((r) => r.data);
+export const deleteSeason = (id: string) => api.delete(`/seasons/${id}`).then((r) => r.data);
+export const publishSeason = (id: string, published: boolean) =>
+  api.post<{ published: boolean }>(`/seasons/${id}/publish`, { published }).then((r) => r.data);
+export const setMeetSeason = (meetId: string, seasonId: string | null) =>
+  api.post<{ seasonId: string | null; seasonName: string | null }>(`/meets/${meetId}/season`, { seasonId }).then((r) => r.data);
+export const getRecords = () => api.get<RecordRow[]>('/records').then((r) => r.data);
+export const getPublicSeason = (id: string) => api.get<PublicSeason>(`/public/seasons/${id}`).then((r) => r.data);
+export const getPublicSeasonRecords = (id: string) => api.get<RecordRow[]>(`/public/seasons/${id}/records`).then((r) => r.data);
 
 export const getOverview = () => api.get<OverviewStats>('/stats/overview').then((r) => r.data);
 export const getPoolStats = (id: string) => api.get<PoolStats>(`/stats/pool/${id}`).then((r) => r.data);

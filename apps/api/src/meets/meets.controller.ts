@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { CreateEntryBody, CreateMeetBody, CreateRaceEventBody, MeetsService, SetPublishedBody, SetRegistrationBody, SetResultBody } from './meets.service';
+import { AssignSeasonBody, CreateEntryBody, CreateMeetBody, CreateRaceEventBody, MeetsService, SetPublishedBody, SetRegistrationBody, SetResultBody } from './meets.service';
 import { CurrentUser, JwtAuthGuard, Roles, RolesGuard } from '../common/auth.common';
 
 type U = { id: string };
@@ -45,6 +45,12 @@ export class MeetsController {
   @HttpCode(200)
   setRegistration(@CurrentUser() u: U, @Param('id') id: string, @Body() dto: SetRegistrationBody) {
     return this.meets.setRegistrationOpen(u.id, id, dto.registrationOpen);
+  }
+
+  @Post('meets/:id/season')
+  @HttpCode(200)
+  setSeason(@CurrentUser() u: U, @Param('id') id: string, @Body() dto: AssignSeasonBody) {
+    return this.meets.setMeetSeason(u.id, id, dto.seasonId);
   }
 
   @Post('meets/:id/events')

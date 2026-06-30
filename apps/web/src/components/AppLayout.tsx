@@ -62,6 +62,8 @@ export function AppLayout() {
             items={[
               { key: 'overview', label: '总览', onClick: () => navigate('/pools') },
               { key: 'meets', label: '赛事', onClick: () => navigate('/meets') },
+              { key: 'seasons', label: '赛季', onClick: () => navigate('/seasons') },
+              { key: 'records', label: '纪录', onClick: () => navigate('/records') },
               { key: 'account', label: '账号与数据', onClick: () => navigate('/account') },
             ]}
           />
