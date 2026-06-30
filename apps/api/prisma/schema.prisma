@@ -186,6 +186,7 @@ model Meet {
   meetDate   DateTime
   hostPoolId String?
   hostPool   Pool?       @relation(fields: [hostPoolId], references: [id], onDelete: SetNull)
+  laneCount  Int         @default(6)
   events     RaceEvent[]
   createdAt  DateTime    @default(now())
 
@@ -216,6 +217,8 @@ model MeetEntry {
   seedTimeMs   Int?
   resultTimeMs Int?
   resultStatus ResultStatus @default(ENTERED)
+  heat         Int?
+  lane         Int?
   createdAt    DateTime     @default(now())
 
   @@unique([raceEventId, swimmerId])

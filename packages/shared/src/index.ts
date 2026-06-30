@@ -127,7 +127,7 @@ export type Medal = 'gold' | 'silver' | 'bronze';
 export interface MeetSummary {
   id: string; name: string; meetDate: string;
   hostPoolId: string | null; hostPoolName: string | null;
-  eventCount: number; createdAt: string;
+  laneCount: number; eventCount: number; createdAt: string;
 }
 export interface RaceEventItem { id: string; distanceMeters: number; stroke: Stroke; order: number; entryCount: number; }
 export interface MeetDetail extends MeetSummary { events: RaceEventItem[]; }
@@ -135,6 +135,7 @@ export interface EntryItem {
   id: string; swimmerId: string; name: string | null; email: string;
   gender: Gender | null; birthDate: string | null;
   seedTimeMs: number | null; resultTimeMs: number | null; resultStatus: ResultStatus;
+  heat: number | null; lane: number | null;
 }
 export interface StandingRow {
   rank: number | null; medal: Medal | null;
@@ -143,7 +144,7 @@ export interface StandingRow {
 }
 export interface StandingsGroup { gender: Gender; ageGroup: string; rows: StandingRow[]; }
 
-export interface CreateMeetDto { name: string; meetDate: string; hostPoolId?: string | null; }
+export interface CreateMeetDto { name: string; meetDate: string; hostPoolId?: string | null; laneCount?: number; }
 export interface CreateRaceEventDto { distanceMeters: number; stroke: Stroke; }
 export interface CreateEntryDto { swimmerId: string; seedTimeMs?: number | null; }
 export interface SetResultDto { resultStatus: ResultStatus; resultTimeMs?: number | null; }

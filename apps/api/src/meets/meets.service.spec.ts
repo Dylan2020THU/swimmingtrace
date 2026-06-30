@@ -8,13 +8,34 @@ describe('MeetsService', () => {
   it('createMeet：Pro 门禁 + 落库', async () => {
     const prisma: any = {
       meet: {
-        create: jest.fn().mockResolvedValue({ id: 'm1', name: 'Spring', meetDate: new Date('2026-07-01T00:00:00.000Z'), hostPoolId: null, hostPool: null, createdAt: new Date('2026-06-30T00:00:00.000Z') }),
+        create: jest.fn().mockResolvedValue({ id: 'm1', name: 'Spring', meetDate: new Date('2026-07-01T00:00:00.000Z'), hostPoolId: null, hostPool: null, laneCount: 6, createdAt: new Date('2026-06-30T00:00:00.000Z') }),
       },
     };
     const billing = mkBilling();
     const out = await new MeetsService(prisma, billing).createMeet('o1', { name: 'Spring', meetDate: '2026-07-01T00:00:00.000Z' });
     expect(billing.assertFeature).toHaveBeenCalledWith('o1', 'meets');
-    expect(out).toMatchObject({ id: 'm1', name: 'Spring', eventCount: 0, hostPoolName: null });
+    expect(out).toMatchObject({ id: 'm1', name: 'Spring', eventCount: 0, hostPoolName: null, laneCount: 6 });
+  });
+
+  it('seedEvent：按种子成绩排道并落库（heat/lane）', async () => {
+    const prisma: any = {
+      raceEvent: { findUnique: jest.fn().mockResolvedValue({ id: 'e1', meetId: 'm1', meet: { ownerId: 'o1', laneCount: 6 } }) },
+      meetEntry: {
+        findMany: jest
+          .fn()
+          .mockResolvedValueOnce([{ id: 'a', seedTimeMs: 1000 }, { id: 'b', seedTimeMs: 2000 }])
+          .mockResolvedValueOnce([
+            { id: 'a', swimmerId: 'a', seedTimeMs: 1000, resultTimeMs: null, resultStatus: 'ENTERED', heat: 1, lane: 3, swimmer: { id: 'a', name: 'A', email: 'a@x', gender: 'MALE', birthDate: new Date('2012-01-01') } },
+            { id: 'b', swimmerId: 'b', seedTimeMs: 2000, resultTimeMs: null, resultStatus: 'ENTERED', heat: 1, lane: 4, swimmer: { id: 'b', name: 'B', email: 'b@x', gender: 'MALE', birthDate: new Date('2012-01-01') } },
+          ]),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      $transaction: jest.fn().mockResolvedValue([]),
+    };
+    const out = await new MeetsService(prisma, mkBilling()).seedEvent('o1', 'e1');
+    expect(prisma.$transaction).toHaveBeenCalled();
+    expect(prisma.meetEntry.update).toHaveBeenCalledTimes(2);
+    expect(out.find((e) => e.id === 'a')).toMatchObject({ heat: 1, lane: 3 });
   });
 
   it('meetDetail：非本人赛事 → 403', async () => {

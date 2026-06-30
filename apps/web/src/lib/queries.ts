@@ -73,6 +73,13 @@ export function useSetResult(eventId: string) {
     },
   });
 }
+export function useSeedEvent(eventId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => ep.seedEvent(eventId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['entries', eventId] }),
+  });
+}
 
 export const queryKeys = {
   pools: ['pools'] as const,
