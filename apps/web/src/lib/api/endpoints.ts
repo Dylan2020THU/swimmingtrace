@@ -35,8 +35,11 @@ export const createPool = (b: CreatePoolDto) => api.post(`/pools`, b).then((r) =
 export const updatePool = (id: string, b: UpdatePoolDto) => api.patch(`/pools/${id}`, b).then((r) => r.data);
 export const archivePool = (id: string) => api.post(`/pools/${id}/archive`).then((r) => r.data);
 
-export const listSwimmers = (poolId: string, page = 1) =>
-  api.get<Paginated<SwimmerListItem>>(`/pools/${poolId}/swimmers`, { params: { page } }).then((r) => r.data);
+export interface RosterFilter { gender?: string; status?: string; q?: string }
+export const listSwimmers = (poolId: string, page = 1, filter?: RosterFilter) =>
+  api.get<Paginated<SwimmerListItem>>(`/pools/${poolId}/swimmers`, {
+    params: { page, ...(filter?.gender ? { gender: filter.gender } : {}), ...(filter?.status ? { status: filter.status } : {}), ...(filter?.q ? { q: filter.q } : {}) },
+  }).then((r) => r.data);
 export const createSwimmer = (poolId: string, b: CreateSwimmerDto) =>
   api.post<SwimmerListItem>(`/pools/${poolId}/swimmers`, b).then((r) => r.data);
 export const setMembership = (poolId: string, sid: string, b: UpdateMembershipDto) =>

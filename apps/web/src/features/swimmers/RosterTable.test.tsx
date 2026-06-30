@@ -27,6 +27,20 @@ it('展示会员并能新建会员', async () => {
   await waitFor(() => expect(screen.getByText('Mei')).toBeInTheDocument());
 });
 
+it('搜索：onSearch 发起带 q 参数的服务端请求', async () => {
+  let lastQ: string | null = null;
+  server.use(
+    http.get('/api/pools/p1/swimmers', ({ request }) => {
+      lastQ = new URL(request.url).searchParams.get('q');
+      return HttpResponse.json(page([sam]));
+    }),
+  );
+  renderWithProviders(<Routes><Route path="*" element={<RosterTable poolId="p1" />} /></Routes>, { route: '/pools/p1' });
+  await screen.findByText('Sam');
+  await userEvent.type(screen.getByPlaceholderText('姓名/邮箱'), 'sam{enter}');
+  await waitFor(() => expect(lastQ).toBe('sam'));
+});
+
 it('服务端分页：切换页码请求下一页并展示其数据', async () => {
   server.use(
     http.get('/api/pools/p1/swimmers', ({ request }) => {

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { App, Button, Card, Empty, Form, Input, List, Modal, Select, Space, Switch, Table, Tag, Typography } from 'antd';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import type { EntryItem, ResultStatus, StandingsGroup, Stroke } from '@swim/shared';
+import { ageGroupOf } from '@swim/shared';
 import {
   useMeet, useAddRaceEvent, usePools, useEntries, useAddEntry, useSetResult, useStandings, useSeedEvent, usePublishMeet, useSetMeetRegistration, useSeasons, useSetMeetSeason,
 } from '../../lib/queries';
@@ -13,9 +14,11 @@ const GENDER_LABEL: Record<string, string> = { MALE: '男', FEMALE: '女' };
 const MEDAL_COLOR: Record<string, string> = { gold: 'gold', silver: 'default', bronze: 'orange' };
 const MEDAL_LABEL: Record<string, string> = { gold: '金', silver: '银', bronze: '铜' };
 
-function EntryRow({ entry, eventId }: { entry: EntryItem; eventId: string }) {
+function EntryRow({ entry, eventId, meetDate }: { entry: EntryItem; eventId: string; meetDate: string }) {
   const { message } = App.useApp();
+  const navigate = useNavigate();
   const setResult = useSetResult(eventId);
+  const ageGroup = entry.birthDate ? ageGroupOf(new Date(entry.birthDate), new Date(meetDate)) : null;
   const [time, setTime] = useState(entry.resultTimeMs != null ? formatSwimTime(entry.resultTimeMs) : '');
   const [status, setStatus] = useState<ResultStatus>(entry.resultStatus === 'ENTERED' ? 'OK' : entry.resultStatus);
 
@@ -31,10 +34,16 @@ function EntryRow({ entry, eventId }: { entry: EntryItem; eventId: string }) {
   };
 
   return (
-    <List.Item actions={[<Button key="s" size="small" loading={setResult.isPending} onClick={save}>保存</Button>]}>
+    <List.Item
+      actions={[
+        <Button key="h" size="small" onClick={() => navigate(`/swimmers/${entry.swimmerId}`)}>泳迹图</Button>,
+        <Button key="s" size="small" loading={setResult.isPending} onClick={save}>保存</Button>,
+      ]}
+    >
       <Space wrap>
         <span>{entry.name ?? entry.email}</span>
         <Tag>{entry.gender ? GENDER_LABEL[entry.gender] : '缺资料'}</Tag>
+        {ageGroup && <Tag color="blue">{ageGroup}</Tag>}
         <Select
           size="small" value={status} style={{ width: 96 }} onChange={setStatus}
           options={(['OK', 'DNS', 'DNF', 'DQ'] as const).map((s) => ({ value: s, label: RESULT_STATUS_LABELS[s] }))}
@@ -95,6 +104,7 @@ export function MeetDetailPage() {
   const pools = usePools();
   const addEvent = useAddRaceEvent(meetId);
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+  const [entryGender, setEntryGender] = useState<string>();
   const [eventOpen, setEventOpen] = useState(false);
   const [eventForm] = Form.useForm();
 
@@ -214,12 +224,18 @@ export function MeetDetailPage() {
             </Space>
           </Card>
 
-          <Card title="报名与成绩">
+          <Card
+            title="报名与成绩"
+            extra={
+              <Select allowClear size="small" placeholder="按性别筛选" style={{ width: 120 }} value={entryGender} onChange={setEntryGender}
+                options={[{ value: 'MALE', label: '男' }, { value: 'FEMALE', label: '女' }]} />
+            }
+          >
             <List
               loading={entries.isLoading}
-              dataSource={entries.data ?? []}
+              dataSource={(entries.data ?? []).filter((en) => !entryGender || en.gender === entryGender)}
               locale={{ emptyText: '还没有报名' }}
-              renderItem={(en) => <EntryRow key={en.id} entry={en} eventId={selectedEvent} />}
+              renderItem={(en) => <EntryRow key={en.id} entry={en} eventId={selectedEvent} meetDate={m?.meetDate ?? ''} />}
             />
           </Card>
 
