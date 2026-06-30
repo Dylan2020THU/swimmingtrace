@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Button, Divider, Empty, List, Skeleton, Space, Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { MemberSessionRow } from '@swim/shared';
@@ -23,17 +24,22 @@ export function MemberSessionList({
   isFetchingNextPage: boolean;
   onLoadMore: () => void;
 }) {
+  // Group by YYYY-MM regardless of arrival order (robust across pagination), months descending.
+  const groups = useMemo(() => {
+    const map = new Map<string, MemberSessionRow[]>();
+    for (const s of sessions) {
+      const month = dayjs(s.swamAt).format('YYYY-MM');
+      const arr = map.get(month);
+      if (arr) arr.push(s);
+      else map.set(month, [s]);
+    }
+    return [...map.entries()]
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([month, rows]) => ({ month, rows }));
+  }, [sessions]);
+
   if (isLoading) return <Skeleton active />;
   if (!sessions.length) return <Empty description="该年度暂无训练记录" />;
-
-  // sessions arrive reverse-chronological; bucket consecutive runs into month groups.
-  const groups: { month: string; rows: MemberSessionRow[] }[] = [];
-  for (const s of sessions) {
-    const month = dayjs(s.swamAt).format('YYYY-MM');
-    const last = groups[groups.length - 1];
-    if (!last || last.month !== month) groups.push({ month, rows: [s] });
-    else last.rows.push(s);
-  }
 
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
@@ -46,6 +52,7 @@ export function MemberSessionList({
             </Divider>
             <List
               size="small"
+              rowKey="id"
               dataSource={g.rows}
               renderItem={(s) => (
                 <List.Item>

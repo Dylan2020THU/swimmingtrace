@@ -118,7 +118,7 @@ export class StatsService {
     const agg = await this.prisma.swimSession.aggregate({
       where: { swimmerId, pool: { ownerId } }, _sum: { distanceMeters: true, durationSeconds: true }, _count: true,
     });
-    const ownerScope = Prisma.sql`"swimmerId" = ${swimmerId} AND "poolId" IN (SELECT "id" FROM "Pool" WHERE "ownerId" = ${ownerId})`;
+    const ownerScope = Prisma.sql`"swimmerId" = ${swimmerId} AND "poolId" IS NOT NULL AND "poolId" IN (SELECT "id" FROM "Pool" WHERE "ownerId" = ${ownerId})`;
     const heatmap = await this.dailyDistance(ownerScope, year ?? new Date().getUTCFullYear());
     return {
       summary: {
@@ -161,6 +161,7 @@ export class StatsService {
     const { skip, take, page: p, pageSize: ps } = paginate(page, pageSize);
     const where: Prisma.SwimSessionWhereInput = {
       swimmerId,
+      poolId: { not: null }, // explicit: only sessions attributed to a pool (the owner's, below)
       pool: { ownerId },
       swamAt: { gte: new Date(Date.UTC(y, 0, 1)), lt: new Date(Date.UTC(y + 1, 0, 1)) },
     };

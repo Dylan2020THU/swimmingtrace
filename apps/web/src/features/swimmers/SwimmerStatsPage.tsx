@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, Col, Row, Select, Space, Statistic } from 'antd';
 import { useParams } from 'react-router-dom';
 import { useMemberProfile, useMemberSessions, useSwimmerStats } from '../../lib/queries';
@@ -15,7 +15,7 @@ export function SwimmerStatsPage() {
   const stats = useSwimmerStats(sid, year);
   const sessions = useMemberSessions(sid, year);
 
-  const flat = (sessions.data?.pages ?? []).flatMap((p) => p.items);
+  const flat = useMemo(() => (sessions.data?.pages ?? []).flatMap((p) => p.items), [sessions.data?.pages]);
   const summary = stats.data?.summary;
 
   // Year options: from the member's registration year to the current year (descending).
@@ -42,6 +42,7 @@ export function SwimmerStatsPage() {
             year={year}
             extra={
               <Select
+                aria-label="选择年份"
                 size="small"
                 style={{ width: 100 }}
                 value={year}

@@ -56,6 +56,10 @@ describe('Member profile (owner-facing /stats/swimmer/:sid) (e2e)', () => {
     // year filter excludes other years
     const empty = (await auth(request(srv()).get(`/stats/swimmer/${sw.swimmerId}/sessions?year=${yr - 5}`)).expect(200)).body;
     expect(empty.total).toBe(0);
+
+    // invalid year is handled gracefully (falls back to current year, not a 500)
+    const bad = (await auth(request(srv()).get(`/stats/swimmer/${sw.swimmerId}/sessions?year=abc`)).expect(200)).body;
+    expect(bad.total).toBe(2);
   });
 
   it('跨 owner 访问会员 profile/sessions → 403', async () => {

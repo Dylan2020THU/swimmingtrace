@@ -5,6 +5,12 @@ import { CurrentUser, JwtAuthGuard, Roles, RolesGuard } from '../common/auth.com
 import { PaginationQuery } from '../common/pagination';
 import { Role } from '@prisma/client';
 
+/** Parse a year query param to a sane value, or undefined (→ service defaults to the current year). */
+function parseYear(year?: string): number | undefined {
+  const n = year ? parseInt(year, 10) : NaN;
+  return Number.isFinite(n) && n >= 2000 && n <= 2100 ? n : undefined;
+}
+
 @ApiTags('stats')
 @ApiBearerAuth()
 @Controller('stats')
@@ -43,7 +49,7 @@ export class StatsController {
   @Get('swimmer/:sid')
   @Roles(Role.OWNER)
   swimmerStats(@CurrentUser() user: { id: string }, @Param('sid') sid: string, @Query('year') year?: string) {
-    return this.stats.swimmerStats(user.id, sid, year ? parseInt(year, 10) : undefined);
+    return this.stats.swimmerStats(user.id, sid, parseYear(year));
   }
 
   @Get('swimmer/:sid/profile')
@@ -60,6 +66,6 @@ export class StatsController {
     @Query() q: PaginationQuery,
     @Query('year') year?: string,
   ) {
-    return this.stats.memberSessions(user.id, sid, year ? parseInt(year, 10) : undefined, q.page, q.pageSize);
+    return this.stats.memberSessions(user.id, sid, parseYear(year), q.page, q.pageSize);
   }
 }
