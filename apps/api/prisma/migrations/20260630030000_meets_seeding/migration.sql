@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "Meet" ADD COLUMN "laneCount" INTEGER NOT NULL DEFAULT 6;
+
+-- AlterTable
+ALTER TABLE "MeetEntry" ADD COLUMN "heat" INTEGER,
+ADD COLUMN "lane" INTEGER;

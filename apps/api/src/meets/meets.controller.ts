@@ -61,6 +61,12 @@ export class MeetsController {
     return this.meets.standingsOf(u.id, eid);
   }
 
+  @Post('events/:eid/seed')
+  @HttpCode(200)
+  seed(@CurrentUser() u: U, @Param('eid') eid: string) {
+    return this.meets.seedEvent(u.id, eid);
+  }
+
   @Delete('entries/:enid')
   @HttpCode(200)
   removeEntry(@CurrentUser() u: U, @Param('enid') enid: string) {

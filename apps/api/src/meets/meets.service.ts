@@ -6,7 +6,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { IsDateString, IsIn, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsDateString, IsIn, IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 import {
   CreateEntryDto,
   CreateMeetDto,
@@ -24,11 +24,13 @@ import {
 import { PrismaService } from '../prisma.service';
 import { BillingService } from '../billing/billing.service';
 import { StandingEntry, computeStandings } from './standings';
+import { seedHeats } from './seeding';
 
 export class CreateMeetBody implements CreateMeetDto {
   @IsString() name: string;
   @IsDateString() meetDate: string;
   @IsOptional() @IsUUID() hostPoolId?: string | null;
+  @IsOptional() @IsInt() @Min(1) @Max(20) laneCount?: number;
 }
 export class CreateRaceEventBody implements CreateRaceEventDto {
   @IsInt() @Min(25) distanceMeters: number;
@@ -44,7 +46,7 @@ export class SetResultBody implements SetResultDto {
 }
 
 type SwimmerLite = { id: string; name: string | null; email: string; gender: Gender | null; birthDate: Date | null };
-type EntryRow = { id: string; swimmerId: string; seedTimeMs: number | null; resultTimeMs: number | null; resultStatus: ResultStatus };
+type EntryRow = { id: string; swimmerId: string; seedTimeMs: number | null; resultTimeMs: number | null; resultStatus: ResultStatus; heat: number | null; lane: number | null };
 
 @Injectable()
 export class MeetsService {
@@ -87,6 +89,8 @@ export class MeetsService {
       seedTimeMs: e.seedTimeMs,
       resultTimeMs: e.resultTimeMs,
       resultStatus: e.resultStatus,
+      heat: e.heat,
+      lane: e.lane,
     };
   }
 
@@ -98,7 +102,7 @@ export class MeetsService {
       if (!pool || pool.ownerId !== ownerId) throw new NotFoundException('主办泳池不存在');
     }
     const meet = await this.prisma.meet.create({
-      data: { ownerId, name: dto.name, meetDate: new Date(dto.meetDate), hostPoolId: dto.hostPoolId ?? null },
+      data: { ownerId, name: dto.name, meetDate: new Date(dto.meetDate), hostPoolId: dto.hostPoolId ?? null, laneCount: dto.laneCount },
       include: { hostPool: { select: { name: true } } },
     });
     return {
@@ -107,6 +111,7 @@ export class MeetsService {
       meetDate: meet.meetDate.toISOString(),
       hostPoolId: meet.hostPoolId,
       hostPoolName: meet.hostPool?.name ?? null,
+      laneCount: meet.laneCount,
       eventCount: 0,
       createdAt: meet.createdAt.toISOString(),
     };
@@ -124,6 +129,7 @@ export class MeetsService {
       meetDate: m.meetDate.toISOString(),
       hostPoolId: m.hostPoolId,
       hostPoolName: m.hostPool?.name ?? null,
+      laneCount: m.laneCount,
       eventCount: m._count.events,
       createdAt: m.createdAt.toISOString(),
     }));
@@ -144,6 +150,7 @@ export class MeetsService {
       meetDate: m.meetDate.toISOString(),
       hostPoolId: m.hostPoolId,
       hostPoolName: m.hostPool?.name ?? null,
+      laneCount: m.laneCount,
       eventCount: m.events.length,
       createdAt: m.createdAt.toISOString(),
       events: m.events.map((e) => ({ id: e.id, distanceMeters: e.distanceMeters, stroke: e.stroke, order: e.order, entryCount: e._count.entries })),
@@ -235,5 +242,26 @@ export class MeetsService {
       resultStatus: e.resultStatus,
     }));
     return computeStandings(standingEntries, ev.meet.meetDate);
+  }
+
+  // ---- seeding (E2) ----
+  /** Championship-seed all entries of an event into heats/lanes by seed time. */
+  async seedEvent(ownerId: string, eventId: string): Promise<EntryItem[]> {
+    const ev = await this.ownEvent(ownerId, eventId);
+    const rows = await this.prisma.meetEntry.findMany({
+      where: { raceEventId: eventId },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, seedTimeMs: true },
+    });
+    const seeded = new Map(seedHeats(rows, ev.meet.laneCount).map((s) => [s.id, s]));
+    await this.prisma.$transaction(
+      rows.map((r) =>
+        this.prisma.meetEntry.update({
+          where: { id: r.id },
+          data: { heat: seeded.get(r.id)?.heat ?? null, lane: seeded.get(r.id)?.lane ?? null },
+        }),
+      ),
+    );
+    return this.listEntries(ownerId, eventId);
   }
 }
