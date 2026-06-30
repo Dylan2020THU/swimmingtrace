@@ -60,7 +60,6 @@ export function RosterTable({ poolId }: { poolId: string }) {
       </Space>
       <Table<SwimmerListItem>
         rowKey="swimmerId" loading={swimmers.isLoading} dataSource={swimmers.data?.items ?? []} columns={columns}
-        onRow={(r) => ({ onClick: () => navigate(`/pools/${poolId}/swimmers/${r.swimmerId}`), style: { cursor: 'pointer' } })}
         pagination={{ current: page, pageSize: 20, total: swimmers.data?.total ?? 0, onChange: setPage }}
         locale={{ emptyText: '没有匹配的会员' }}
       />
