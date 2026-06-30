@@ -41,6 +41,20 @@ it('搜索：onSearch 发起带 q 参数的服务端请求', async () => {
   await waitFor(() => expect(lastQ).toBe('sam'));
 });
 
+it('「代录」按钮跳转到该会员的按泳池详情页', async () => {
+  server.use(http.get('/api/pools/p1/swimmers', () => HttpResponse.json(page([sam]))));
+  renderWithProviders(
+    <Routes>
+      <Route path="/pools/:poolId" element={<RosterTable poolId="p1" />} />
+      <Route path="/pools/:poolId/swimmers/:sid" element={<div>会员详情页</div>} />
+    </Routes>,
+    { route: '/pools/p1' },
+  );
+  await screen.findByText('Sam');
+  await userEvent.click(screen.getByRole('button', { name: /代\s*录/ }));
+  expect(await screen.findByText('会员详情页')).toBeInTheDocument();
+});
+
 it('性别筛选含「全部」选项，可筛选并重置', async () => {
   let lastGender: string | null = 'init';
   server.use(
