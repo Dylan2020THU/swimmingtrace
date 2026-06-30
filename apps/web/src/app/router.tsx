@@ -10,6 +10,8 @@ import { PoolDetailPage } from '../features/pools/PoolDetailPage';
 import { SwimmerDetailPage } from '../features/swimmers/SwimmerDetailPage';
 import { ChallengeDetailPage } from '../features/challenges/ChallengeDetailPage';
 import { AccountPage } from '../features/account/AccountPage';
+import { MeetsListPage } from '../features/meets/MeetsListPage';
+import { MeetDetailPage } from '../features/meets/MeetDetailPage';
 
 export function AppRouter() {
   return (
@@ -27,6 +29,8 @@ export function AppRouter() {
             <Route path="/pools/:poolId/swimmers/:sid" element={<SwimmerDetailPage />} />
             <Route path="/pools/:poolId/challenges/:cid" element={<ChallengeDetailPage />} />
             <Route path="/account" element={<AccountPage />} />
+            <Route path="/meets" element={<MeetsListPage />} />
+            <Route path="/meets/:meetId" element={<MeetDetailPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/pools" replace />} />
