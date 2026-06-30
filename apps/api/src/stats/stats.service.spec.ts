@@ -64,3 +64,53 @@ describe('StatsService.swimmerStats', () => {
     expect(res.heatmap).toEqual([{ date: '2026-03-02', distanceMeters: 3000 }]);
   });
 });
+
+describe('StatsService.memberProfile', () => {
+  it('非本人名下游泳者 → 403', async () => {
+    const prisma: any = { registration: { findFirst: jest.fn().mockResolvedValue(null) } };
+    const svc = new StatsService(prisma, { get: () => 'UTC' } as any);
+    await expect(svc.memberProfile('o1', 's1')).rejects.toBeInstanceOf(ForbiddenException);
+  });
+  it('返回基本信息 + owner 名下泳池登记', async () => {
+    const prisma: any = {
+      registration: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'r1' }),
+        findMany: jest.fn().mockResolvedValue([
+          { status: 'ACTIVE', joinedAt: new Date('2026-01-01T00:00:00.000Z'), pool: { id: 'p1', name: '晨曦' } },
+        ]),
+      },
+      user: { findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 's1', name: 'Sam', email: 's@x', gender: 'MALE', birthDate: new Date('2012-03-01T00:00:00.000Z'), claimedAt: null, createdAt: new Date('2025-06-01T00:00:00.000Z') }) },
+    };
+    const svc = new StatsService(prisma, { get: () => 'UTC' } as any);
+    const res = await svc.memberProfile('o1', 's1');
+    expect(res).toMatchObject({ swimmerId: 's1', name: 'Sam', email: 's@x', gender: 'MALE', claimedAt: null, createdAt: '2025-06-01T00:00:00.000Z' });
+    expect(res.pools).toEqual([{ poolId: 'p1', poolName: '晨曦', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00.000Z' }]);
+    expect(prisma.registration.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { swimmerId: 's1', pool: { ownerId: 'o1' } } }));
+  });
+});
+
+describe('StatsService.memberSessions', () => {
+  it('非本人名下游泳者 → 403', async () => {
+    const prisma: any = { registration: { findFirst: jest.fn().mockResolvedValue(null) } };
+    const svc = new StatsService(prisma, { get: () => 'UTC' } as any);
+    await expect(svc.memberSessions('o1', 's1')).rejects.toBeInstanceOf(ForbiddenException);
+  });
+  it('倒序分页 + poolName 映射，scoped 到 owner 名下泳池', async () => {
+    const prisma: any = {
+      registration: { findFirst: jest.fn().mockResolvedValue({ id: 'r1' }) },
+      swimSession: {
+        findMany: jest.fn().mockResolvedValue([
+          { id: 'se1', swamAt: new Date('2026-03-02T08:00:00.000Z'), distanceMeters: 1500, durationSeconds: 1800, poolId: 'p1', pool: { name: '晨曦' } },
+        ]),
+        count: jest.fn().mockResolvedValue(1),
+      },
+    };
+    const svc = new StatsService(prisma, { get: () => 'UTC' } as any);
+    const res = await svc.memberSessions('o1', 's1', 2026, 1, 20);
+    expect(res).toMatchObject({ total: 1, page: 1, pageSize: 20 });
+    expect(res.items[0]).toEqual({ id: 'se1', swamAt: '2026-03-02T08:00:00.000Z', distanceMeters: 1500, durationSeconds: 1800, poolId: 'p1', poolName: '晨曦' });
+    const call = prisma.swimSession.findMany.mock.calls[0][0];
+    expect(call.where).toMatchObject({ swimmerId: 's1', pool: { ownerId: 'o1' } });
+    expect(call.orderBy).toEqual({ swamAt: 'desc' });
+  });
+});

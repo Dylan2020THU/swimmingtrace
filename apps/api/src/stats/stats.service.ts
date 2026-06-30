@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
-import { OverviewStats, PoolStats, SwimmerStats, HeatmapCell } from '@swim/shared';
+import { OverviewStats, PoolStats, SwimmerStats, HeatmapCell, MemberProfile, MemberSessionRow, Paginated } from '@swim/shared';
 import { assertOwnsPool, assertOwnsSwimmer } from '../common/ownership';
+import { paginate } from '../common/pagination';
 
 @Injectable()
 export class StatsService {
@@ -107,12 +108,18 @@ export class StatsService {
     return this.dailyDistance(Prisma.sql`"swimmerId" = ${swimmerId}`, year);
   }
 
-  async swimmerStats(ownerId: string, swimmerId: string): Promise<SwimmerStats> {
+  /**
+   * Owner-facing member stats, scoped to the member's training IN THIS OWNER'S pools
+   * (so one owner never sees a member's activity in another owner's pool). The heatmap
+   * uses `year` (default current). Summary is all-time within the owner's pools.
+   */
+  async swimmerStats(ownerId: string, swimmerId: string, year?: number): Promise<SwimmerStats> {
     await assertOwnsSwimmer(this.prisma, ownerId, swimmerId);
     const agg = await this.prisma.swimSession.aggregate({
-      where: { swimmerId }, _sum: { distanceMeters: true, durationSeconds: true }, _count: true,
+      where: { swimmerId, pool: { ownerId } }, _sum: { distanceMeters: true, durationSeconds: true }, _count: true,
     });
-    const heatmap = await this.dailyBySwimmer(swimmerId, new Date().getUTCFullYear());
+    const ownerScope = Prisma.sql`"swimmerId" = ${swimmerId} AND "poolId" IN (SELECT "id" FROM "Pool" WHERE "ownerId" = ${ownerId})`;
+    const heatmap = await this.dailyDistance(ownerScope, year ?? new Date().getUTCFullYear());
     return {
       summary: {
         totalDistanceMeters: agg._sum.distanceMeters ?? 0,
@@ -120,6 +127,59 @@ export class StatsService {
         sessionCount: agg._count,
       },
       heatmap,
+    };
+  }
+
+  /** Owner-facing member profile: basic info + the member's registrations in this owner's pools. */
+  async memberProfile(ownerId: string, swimmerId: string): Promise<MemberProfile> {
+    await assertOwnsSwimmer(this.prisma, ownerId, swimmerId);
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: swimmerId },
+      select: { id: true, name: true, email: true, gender: true, birthDate: true, claimedAt: true, createdAt: true },
+    });
+    const regs = await this.prisma.registration.findMany({
+      where: { swimmerId, pool: { ownerId } },
+      include: { pool: { select: { id: true, name: true } } },
+      orderBy: { joinedAt: 'desc' },
+    });
+    return {
+      swimmerId: user.id,
+      name: user.name,
+      email: user.email,
+      gender: user.gender ?? null,
+      birthDate: user.birthDate ? user.birthDate.toISOString() : null,
+      claimedAt: user.claimedAt ? user.claimedAt.toISOString() : null,
+      createdAt: user.createdAt.toISOString(),
+      pools: regs.map((r) => ({ poolId: r.pool.id, poolName: r.pool.name, status: r.status, joinedAt: r.joinedAt.toISOString() })),
+    };
+  }
+
+  /** Owner-facing member session history (reverse-chron, paginated), scoped to this owner's pools + year. */
+  async memberSessions(ownerId: string, swimmerId: string, year?: number, page?: number, pageSize?: number): Promise<Paginated<MemberSessionRow>> {
+    await assertOwnsSwimmer(this.prisma, ownerId, swimmerId);
+    const y = year ?? new Date().getUTCFullYear();
+    const { skip, take, page: p, pageSize: ps } = paginate(page, pageSize);
+    const where: Prisma.SwimSessionWhereInput = {
+      swimmerId,
+      pool: { ownerId },
+      swamAt: { gte: new Date(Date.UTC(y, 0, 1)), lt: new Date(Date.UTC(y + 1, 0, 1)) },
+    };
+    const [items, total] = await Promise.all([
+      this.prisma.swimSession.findMany({ where, include: { pool: { select: { name: true } } }, orderBy: { swamAt: 'desc' }, skip, take }),
+      this.prisma.swimSession.count({ where }),
+    ]);
+    return {
+      items: items.map((s) => ({
+        id: s.id,
+        swamAt: s.swamAt.toISOString(),
+        distanceMeters: s.distanceMeters,
+        durationSeconds: s.durationSeconds,
+        poolId: s.poolId,
+        poolName: s.pool?.name ?? null,
+      })),
+      total,
+      page: p,
+      pageSize: ps,
     };
   }
 }

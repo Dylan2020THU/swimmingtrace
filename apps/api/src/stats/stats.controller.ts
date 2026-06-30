@@ -2,6 +2,7 @@ import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { StatsService } from './stats.service';
 import { CurrentUser, JwtAuthGuard, Roles, RolesGuard } from '../common/auth.common';
+import { PaginationQuery } from '../common/pagination';
 import { Role } from '@prisma/client';
 
 @ApiTags('stats')
@@ -41,7 +42,24 @@ export class StatsController {
 
   @Get('swimmer/:sid')
   @Roles(Role.OWNER)
-  swimmerStats(@CurrentUser() user: { id: string }, @Param('sid') sid: string) {
-    return this.stats.swimmerStats(user.id, sid);
+  swimmerStats(@CurrentUser() user: { id: string }, @Param('sid') sid: string, @Query('year') year?: string) {
+    return this.stats.swimmerStats(user.id, sid, year ? parseInt(year, 10) : undefined);
+  }
+
+  @Get('swimmer/:sid/profile')
+  @Roles(Role.OWNER)
+  memberProfile(@CurrentUser() user: { id: string }, @Param('sid') sid: string) {
+    return this.stats.memberProfile(user.id, sid);
+  }
+
+  @Get('swimmer/:sid/sessions')
+  @Roles(Role.OWNER)
+  memberSessions(
+    @CurrentUser() user: { id: string },
+    @Param('sid') sid: string,
+    @Query() q: PaginationQuery,
+    @Query('year') year?: string,
+  ) {
+    return this.stats.memberSessions(user.id, sid, year ? parseInt(year, 10) : undefined, q.page, q.pageSize);
   }
 }
