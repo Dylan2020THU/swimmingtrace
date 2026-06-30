@@ -62,6 +62,26 @@ it('出发名单按分组渲染，且「排道」触发 seed', async () => {
   await waitFor(() => expect(seedHit).toBe(true));
 });
 
+it('「归入赛季」Select 选择后 POST /meets/:id/season', async () => {
+  let body: any = null;
+  server.use(
+    http.get('/api/meets/m1', () =>
+      HttpResponse.json({
+        id: 'm1', name: '系列赛某场', meetDate: '2026-06-30T00:00:00.000Z',
+        hostPoolId: null, hostPoolName: null, laneCount: 6, eventCount: 0, published: false, registrationOpen: false, seasonId: null, seasonName: null, createdAt: '2026-06-30T00:00:00.000Z',
+        events: [],
+      })),
+    http.get('/api/seasons', () => HttpResponse.json([{ id: 's1', name: '2026春季', referenceDate: '2026-01-01T00:00:00.000Z', published: false, meetCount: 0, createdAt: '2026-01-01T00:00:00.000Z' }])),
+    http.post('/api/meets/m1/season', async ({ request }) => { body = await request.json(); return HttpResponse.json({ seasonId: 's1', seasonName: '2026春季' }); }),
+  );
+
+  renderWithProviders(<Routes><Route path="/meets/:meetId" element={<MeetDetailPage />} /></Routes>, { route: '/meets/m1' });
+  await screen.findByText('系列赛某场');
+  await userEvent.click(screen.getByRole('combobox'));
+  await userEvent.click(await screen.findByText('2026春季'));
+  await waitFor(() => expect(body).toEqual({ seasonId: 's1' }));
+});
+
 it('「开放报名」开关触发 POST /meets/:id/registration', async () => {
   let body: any = null;
   server.use(

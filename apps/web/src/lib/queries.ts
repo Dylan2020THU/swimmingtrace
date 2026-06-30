@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CreatePoolDto, UpdatePoolDto, CreateSwimmerDto, UpdateMembershipDto, CreateSessionDto, CreateChallengeDto, Plan,
-  CreateMeetDto, CreateRaceEventDto, CreateEntryDto, SetResultDto,
+  CreateMeetDto, CreateRaceEventDto, CreateEntryDto, SetResultDto, CreateSeasonDto,
 } from '@swim/shared';
 import * as ep from './api/endpoints';
 
@@ -94,6 +94,35 @@ export function useSetMeetRegistration(meetId: string) {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['meet', meetId] }); qc.invalidateQueries({ queryKey: ['meets'] }); },
   });
 }
+// seasons & records (E5)
+export const useSeasons = () => useQuery({ queryKey: ['seasons'], queryFn: ep.listSeasons });
+export const useSeason = (id: string) => useQuery({ queryKey: ['season', id], queryFn: () => ep.getSeason(id) });
+export const useRecords = () => useQuery({ queryKey: ['records'], queryFn: ep.getRecords });
+export function useCreateSeason() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (b: CreateSeasonDto) => ep.createSeason(b), onSuccess: () => qc.invalidateQueries({ queryKey: ['seasons'] }) });
+}
+export function useDeleteSeason() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => ep.deleteSeason(id), onSuccess: () => qc.invalidateQueries({ queryKey: ['seasons'] }) });
+}
+export function usePublishSeason(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (published: boolean) => ep.publishSeason(id, published),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['season', id] }); qc.invalidateQueries({ queryKey: ['seasons'] }); },
+  });
+}
+export function useSetMeetSeason(meetId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (seasonId: string | null) => ep.setMeetSeason(meetId, seasonId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['meet', meetId] }); qc.invalidateQueries({ queryKey: ['meets'] }); qc.invalidateQueries({ queryKey: ['seasons'] }); },
+  });
+}
+export const usePublicSeason = (id: string) => useQuery({ queryKey: ['publicSeason', id], queryFn: () => ep.getPublicSeason(id), retry: false });
+export const usePublicSeasonRecords = (id: string) => useQuery({ queryKey: ['publicSeasonRecords', id], queryFn: () => ep.getPublicSeasonRecords(id), retry: false });
+
 export const usePublicMeet = (id: string) => useQuery({ queryKey: ['publicMeet', id], queryFn: () => ep.getPublicMeet(id), retry: false });
 export const usePublicStartList = (eid: string | null) =>
   useQuery({ queryKey: ['publicStartList', eid], queryFn: () => ep.getPublicStartList(eid!), enabled: !!eid });
