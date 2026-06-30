@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CreatePoolDto, UpdatePoolDto, CreateSwimmerDto, UpdateMembershipDto, CreateSessionDto, CreateChallengeDto, Plan,
   CreateMeetDto, CreateRaceEventDto, CreateEntryDto, SetResultDto, CreateSeasonDto,
@@ -175,8 +175,17 @@ export const useSwimmers = (poolId: string, page = 1, filter?: ep.RosterFilter) 
   useQuery({ queryKey: [...queryKeys.swimmers(poolId), page, filter ?? null], queryFn: () => ep.listSwimmers(poolId, page, filter) });
 export const useOverview = () => useQuery({ queryKey: queryKeys.overview, queryFn: ep.getOverview });
 export const usePoolStats = (id: string) => useQuery({ queryKey: queryKeys.poolStats(id), queryFn: () => ep.getPoolStats(id) });
-export const useSwimmerStats = (sid: string) =>
-  useQuery({ queryKey: queryKeys.swimmerStats(sid), queryFn: () => ep.getSwimmerStats(sid) });
+export const useSwimmerStats = (sid: string, year?: number) =>
+  useQuery({ queryKey: [...queryKeys.swimmerStats(sid), year ?? null], queryFn: () => ep.getSwimmerStats(sid, year) });
+export const useMemberProfile = (sid: string) =>
+  useQuery({ queryKey: ['memberProfile', sid], queryFn: () => ep.getMemberProfile(sid) });
+export const useMemberSessions = (sid: string, year: number) =>
+  useInfiniteQuery({
+    queryKey: ['memberSessions', sid, year],
+    queryFn: ({ pageParam }) => ep.getMemberSessions(sid, year, pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.page * last.pageSize < last.total ? last.page + 1 : undefined),
+  });
 
 export function useCreatePool() {
   const qc = useQueryClient();
