@@ -23,6 +23,9 @@ import {
   PublicMeet,
   PublicStartListHeat,
   SetPublishedDto,
+  SetRegistrationDto,
+  SelfEntryDto,
+  MyMeet,
 } from '@swim/shared';
 import { PrismaService } from '../prisma.service';
 import { BillingService } from '../billing/billing.service';
@@ -49,6 +52,12 @@ export class SetResultBody implements SetResultDto {
 }
 export class SetPublishedBody implements SetPublishedDto {
   @IsBoolean() published: boolean;
+}
+export class SetRegistrationBody implements SetRegistrationDto {
+  @IsBoolean() registrationOpen: boolean;
+}
+export class SelfEntryBody implements SelfEntryDto {
+  @IsOptional() @IsInt() @Min(0) seedTimeMs?: number | null;
 }
 
 type SwimmerLite = { id: string; name: string | null; email: string; gender: Gender | null; birthDate: Date | null };
@@ -120,6 +129,7 @@ export class MeetsService {
       laneCount: meet.laneCount,
       eventCount: 0,
       published: meet.published,
+      registrationOpen: meet.registrationOpen,
       createdAt: meet.createdAt.toISOString(),
     };
   }
@@ -139,6 +149,7 @@ export class MeetsService {
       laneCount: m.laneCount,
       eventCount: m._count.events,
       published: m.published,
+      registrationOpen: m.registrationOpen,
       createdAt: m.createdAt.toISOString(),
     }));
   }
@@ -161,6 +172,7 @@ export class MeetsService {
       laneCount: m.laneCount,
       eventCount: m.events.length,
       published: m.published,
+      registrationOpen: m.registrationOpen,
       createdAt: m.createdAt.toISOString(),
       events: m.events.map((e) => ({ id: e.id, distanceMeters: e.distanceMeters, stroke: e.stroke, order: e.order, entryCount: e._count.entries })),
     };
@@ -279,6 +291,95 @@ export class MeetsService {
     await this.ownMeet(ownerId, meetId);
     await this.prisma.meet.update({ where: { id: meetId }, data: { published } });
     return { published };
+  }
+
+  // ---- self-registration (E4) ----
+  async setRegistrationOpen(ownerId: string, meetId: string, registrationOpen: boolean): Promise<{ registrationOpen: boolean }> {
+    await this.ownMeet(ownerId, meetId);
+    await this.prisma.meet.update({ where: { id: meetId }, data: { registrationOpen } });
+    return { registrationOpen };
+  }
+
+  /** The set of owner ids whose pools this swimmer is an ACTIVE member of. */
+  private async activeOwnerIds(swimmerId: string): Promise<string[]> {
+    const regs = await this.prisma.registration.findMany({
+      where: { swimmerId, status: 'ACTIVE' },
+      select: { pool: { select: { ownerId: true } } },
+    });
+    return [...new Set(regs.map((r) => r.pool.ownerId))];
+  }
+
+  /** Open meets a swimmer may self-register for: owner's registration is open and the swimmer is an ACTIVE member. */
+  async myOpenMeets(swimmerId: string): Promise<MyMeet[]> {
+    const ownerIds = await this.activeOwnerIds(swimmerId);
+    if (ownerIds.length === 0) return [];
+    const meets = await this.prisma.meet.findMany({
+      where: { registrationOpen: true, ownerId: { in: ownerIds } },
+      orderBy: { meetDate: 'desc' },
+      include: {
+        hostPool: { select: { name: true } },
+        events: {
+          orderBy: { order: 'asc' },
+          include: { entries: { where: { swimmerId }, select: { id: true, seedTimeMs: true } } },
+        },
+      },
+    });
+    return meets.map((m) => ({
+      id: m.id,
+      name: m.name,
+      meetDate: m.meetDate.toISOString(),
+      hostPoolName: m.hostPool?.name ?? null,
+      events: m.events.map((e) => {
+        const mine = e.entries[0];
+        return {
+          id: e.id,
+          distanceMeters: e.distanceMeters,
+          stroke: e.stroke,
+          order: e.order,
+          myEntryId: mine?.id ?? null,
+          mySeedTimeMs: mine?.seedTimeMs ?? null,
+        };
+      }),
+    }));
+  }
+
+  /** A swimmer self-registers into an event of an owner's open meet. */
+  async selfRegister(swimmerId: string, eventId: string, dto: SelfEntryDto): Promise<EntryItem> {
+    const ev = await this.prisma.raceEvent.findUnique({ where: { id: eventId }, include: { meet: true } });
+    if (!ev) throw new NotFoundException('项目不存在');
+    if (!ev.meet.registrationOpen) throw new ForbiddenException('该赛事未开放报名');
+    const member = await this.prisma.registration.findFirst({
+      where: { swimmerId, status: 'ACTIVE', pool: { ownerId: ev.meet.ownerId } },
+    });
+    if (!member) throw new ForbiddenException('你不是该赛事主办方的会员');
+    const swimmer = await this.prisma.user.findUnique({ where: { id: swimmerId } });
+    if (!swimmer) throw new NotFoundException();
+    if (!swimmer.gender || !swimmer.birthDate) {
+      throw new UnprocessableEntityException('请先在「我的资料」补全性别与出生日期');
+    }
+    try {
+      const entry = await this.prisma.meetEntry.create({
+        data: { raceEventId: eventId, swimmerId, seedTimeMs: dto.seedTimeMs ?? null },
+      });
+      return this.toEntryItem(entry, swimmer);
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+        throw new ConflictException('你已报名此项目');
+      }
+      throw e;
+    }
+  }
+
+  /** A swimmer withdraws their own entry — only their own, and only before a result is recorded. */
+  async withdrawOwn(swimmerId: string, entryId: string): Promise<{ ok: true }> {
+    const en = await this.prisma.meetEntry.findUnique({ where: { id: entryId } });
+    if (!en) throw new NotFoundException('报名不存在');
+    if (en.swimmerId !== swimmerId) throw new ForbiddenException();
+    if (en.resultStatus !== 'ENTERED' || en.resultTimeMs != null) {
+      throw new ConflictException('已有成绩，无法撤回');
+    }
+    await this.prisma.meetEntry.delete({ where: { id: entryId } });
+    return { ok: true };
   }
 
   /** Public meet projection — only for a published meet; PII-free. */

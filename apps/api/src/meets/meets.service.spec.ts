@@ -1,4 +1,5 @@
-import { ForbiddenException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { MeetsService } from './meets.service';
 
 const mkBilling = (over: Record<string, unknown> = {}) =>
@@ -8,13 +9,13 @@ describe('MeetsService', () => {
   it('createMeet：Pro 门禁 + 落库', async () => {
     const prisma: any = {
       meet: {
-        create: jest.fn().mockResolvedValue({ id: 'm1', name: 'Spring', meetDate: new Date('2026-07-01T00:00:00.000Z'), hostPoolId: null, hostPool: null, laneCount: 6, published: false, createdAt: new Date('2026-06-30T00:00:00.000Z') }),
+        create: jest.fn().mockResolvedValue({ id: 'm1', name: 'Spring', meetDate: new Date('2026-07-01T00:00:00.000Z'), hostPoolId: null, hostPool: null, laneCount: 6, published: false, registrationOpen: false, createdAt: new Date('2026-06-30T00:00:00.000Z') }),
       },
     };
     const billing = mkBilling();
     const out = await new MeetsService(prisma, billing).createMeet('o1', { name: 'Spring', meetDate: '2026-07-01T00:00:00.000Z' });
     expect(billing.assertFeature).toHaveBeenCalledWith('o1', 'meets');
-    expect(out).toMatchObject({ id: 'm1', name: 'Spring', eventCount: 0, hostPoolName: null, laneCount: 6, published: false });
+    expect(out).toMatchObject({ id: 'm1', name: 'Spring', eventCount: 0, hostPoolName: null, laneCount: 6, published: false, registrationOpen: false });
   });
 
   it('setPublished：所有权 + 切换', async () => {
@@ -140,5 +141,106 @@ describe('MeetsService', () => {
       ['A', 1, 'gold'],
       ['B', 2, 'silver'],
     ]);
+  });
+
+  // ---- self-registration (E4) ----
+  it('setRegistrationOpen：所有权 + 切换', async () => {
+    const prisma: any = { meet: { findUnique: jest.fn().mockResolvedValue({ id: 'm1', ownerId: 'o1' }), update: jest.fn().mockResolvedValue({}) } };
+    const res = await new MeetsService(prisma, mkBilling()).setRegistrationOpen('o1', 'm1', true);
+    expect(res).toEqual({ registrationOpen: true });
+    expect(prisma.meet.update).toHaveBeenCalledWith({ where: { id: 'm1' }, data: { registrationOpen: true } });
+  });
+
+  it('myOpenMeets：仅活跃会员所属、且开放报名的赛事，含我的报名', async () => {
+    const prisma: any = {
+      registration: { findMany: jest.fn().mockResolvedValue([{ pool: { ownerId: 'o1' } }]) },
+      meet: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'm1', name: 'Spring', meetDate: new Date('2026-07-01T00:00:00.000Z'), hostPool: { name: 'P' },
+            events: [
+              { id: 'e1', distanceMeters: 50, stroke: 'FREE', order: 0, entries: [{ id: 'en1', seedTimeMs: 28760 }] },
+              { id: 'e2', distanceMeters: 100, stroke: 'BACK', order: 1, entries: [] },
+            ],
+          },
+        ]),
+      },
+    };
+    const out = await new MeetsService(prisma, mkBilling()).myOpenMeets('s1');
+    expect(prisma.meet.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { registrationOpen: true, ownerId: { in: ['o1'] } } }));
+    expect(out).toHaveLength(1);
+    expect(out[0].events[0]).toMatchObject({ id: 'e1', myEntryId: 'en1', mySeedTimeMs: 28760 });
+    expect(out[0].events[1]).toMatchObject({ id: 'e2', myEntryId: null, mySeedTimeMs: null });
+  });
+
+  it('myOpenMeets：无活跃会员 → []', async () => {
+    const prisma: any = { registration: { findMany: jest.fn().mockResolvedValue([]) }, meet: { findMany: jest.fn() } };
+    const out = await new MeetsService(prisma, mkBilling()).myOpenMeets('s1');
+    expect(out).toEqual([]);
+    expect(prisma.meet.findMany).not.toHaveBeenCalled();
+  });
+
+  it('selfRegister：未开放报名 → 403', async () => {
+    const prisma: any = { raceEvent: { findUnique: jest.fn().mockResolvedValue({ id: 'e1', meet: { ownerId: 'o1', registrationOpen: false } }) } };
+    await expect(new MeetsService(prisma, mkBilling()).selfRegister('s1', 'e1', {})).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('selfRegister：非主办方会员 → 403', async () => {
+    const prisma: any = {
+      raceEvent: { findUnique: jest.fn().mockResolvedValue({ id: 'e1', meet: { ownerId: 'o1', registrationOpen: true } }) },
+      registration: { findFirst: jest.fn().mockResolvedValue(null) },
+    };
+    await expect(new MeetsService(prisma, mkBilling()).selfRegister('s1', 'e1', {})).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('selfRegister：缺 gender/birthDate → 422，不建报名', async () => {
+    const prisma: any = {
+      raceEvent: { findUnique: jest.fn().mockResolvedValue({ id: 'e1', meet: { ownerId: 'o1', registrationOpen: true } }) },
+      registration: { findFirst: jest.fn().mockResolvedValue({ id: 'r1' }) },
+      user: { findUnique: jest.fn().mockResolvedValue({ id: 's1', gender: null, birthDate: null }) },
+      meetEntry: { create: jest.fn() },
+    };
+    await expect(new MeetsService(prisma, mkBilling()).selfRegister('s1', 'e1', {})).rejects.toBeInstanceOf(UnprocessableEntityException);
+    expect(prisma.meetEntry.create).not.toHaveBeenCalled();
+  });
+
+  it('selfRegister：成功落库并返回 EntryItem', async () => {
+    const prisma: any = {
+      raceEvent: { findUnique: jest.fn().mockResolvedValue({ id: 'e1', meet: { ownerId: 'o1', registrationOpen: true } }) },
+      registration: { findFirst: jest.fn().mockResolvedValue({ id: 'r1' }) },
+      user: { findUnique: jest.fn().mockResolvedValue({ id: 's1', name: 'A', email: 'a@x', gender: 'MALE', birthDate: new Date('2012-01-01T00:00:00.000Z') }) },
+      meetEntry: { create: jest.fn().mockResolvedValue({ id: 'en1', swimmerId: 's1', seedTimeMs: 28760, resultTimeMs: null, resultStatus: 'ENTERED', heat: null, lane: null }) },
+    };
+    const out = await new MeetsService(prisma, mkBilling()).selfRegister('s1', 'e1', { seedTimeMs: 28760 });
+    expect(out).toMatchObject({ id: 'en1', swimmerId: 's1', seedTimeMs: 28760, name: 'A' });
+  });
+
+  it('selfRegister：重复报名 → 409', async () => {
+    const prisma: any = {
+      raceEvent: { findUnique: jest.fn().mockResolvedValue({ id: 'e1', meet: { ownerId: 'o1', registrationOpen: true } }) },
+      registration: { findFirst: jest.fn().mockResolvedValue({ id: 'r1' }) },
+      user: { findUnique: jest.fn().mockResolvedValue({ id: 's1', name: 'A', email: 'a@x', gender: 'MALE', birthDate: new Date('2012-01-01T00:00:00.000Z') }) },
+      meetEntry: { create: jest.fn().mockRejectedValue(new Prisma.PrismaClientKnownRequestError('dup', { code: 'P2002', clientVersion: 'x' })) },
+    };
+    await expect(new MeetsService(prisma, mkBilling()).selfRegister('s1', 'e1', {})).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('withdrawOwn：仅本人 → 非本人 403', async () => {
+    const prisma: any = { meetEntry: { findUnique: jest.fn().mockResolvedValue({ id: 'en1', swimmerId: 'other', resultStatus: 'ENTERED', resultTimeMs: null }), delete: jest.fn() } };
+    await expect(new MeetsService(prisma, mkBilling()).withdrawOwn('s1', 'en1')).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.meetEntry.delete).not.toHaveBeenCalled();
+  });
+
+  it('withdrawOwn：已有成绩 → 409，不删', async () => {
+    const prisma: any = { meetEntry: { findUnique: jest.fn().mockResolvedValue({ id: 'en1', swimmerId: 's1', resultStatus: 'OK', resultTimeMs: 30000 }), delete: jest.fn() } };
+    await expect(new MeetsService(prisma, mkBilling()).withdrawOwn('s1', 'en1')).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.meetEntry.delete).not.toHaveBeenCalled();
+  });
+
+  it('withdrawOwn：本人且无成绩 → 删除', async () => {
+    const prisma: any = { meetEntry: { findUnique: jest.fn().mockResolvedValue({ id: 'en1', swimmerId: 's1', resultStatus: 'ENTERED', resultTimeMs: null }), delete: jest.fn().mockResolvedValue({}) } };
+    const res = await new MeetsService(prisma, mkBilling()).withdrawOwn('s1', 'en1');
+    expect(res).toEqual({ ok: true });
+    expect(prisma.meetEntry.delete).toHaveBeenCalledWith({ where: { id: 'en1' } });
   });
 });
