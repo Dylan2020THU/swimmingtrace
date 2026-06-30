@@ -80,6 +80,18 @@ export function useSeedEvent(eventId: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['entries', eventId] }),
   });
 }
+export function usePublishMeet(meetId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (published: boolean) => ep.publishMeet(meetId, published),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['meet', meetId] }); qc.invalidateQueries({ queryKey: ['meets'] }); },
+  });
+}
+export const usePublicMeet = (id: string) => useQuery({ queryKey: ['publicMeet', id], queryFn: () => ep.getPublicMeet(id), retry: false });
+export const usePublicStartList = (eid: string | null) =>
+  useQuery({ queryKey: ['publicStartList', eid], queryFn: () => ep.getPublicStartList(eid!), enabled: !!eid });
+export const usePublicResults = (eid: string | null) =>
+  useQuery({ queryKey: ['publicResults', eid], queryFn: () => ep.getPublicResults(eid!), enabled: !!eid });
 
 export const queryKeys = {
   pools: ['pools'] as const,

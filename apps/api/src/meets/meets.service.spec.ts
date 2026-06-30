@@ -8,13 +8,59 @@ describe('MeetsService', () => {
   it('createMeet：Pro 门禁 + 落库', async () => {
     const prisma: any = {
       meet: {
-        create: jest.fn().mockResolvedValue({ id: 'm1', name: 'Spring', meetDate: new Date('2026-07-01T00:00:00.000Z'), hostPoolId: null, hostPool: null, laneCount: 6, createdAt: new Date('2026-06-30T00:00:00.000Z') }),
+        create: jest.fn().mockResolvedValue({ id: 'm1', name: 'Spring', meetDate: new Date('2026-07-01T00:00:00.000Z'), hostPoolId: null, hostPool: null, laneCount: 6, published: false, createdAt: new Date('2026-06-30T00:00:00.000Z') }),
       },
     };
     const billing = mkBilling();
     const out = await new MeetsService(prisma, billing).createMeet('o1', { name: 'Spring', meetDate: '2026-07-01T00:00:00.000Z' });
     expect(billing.assertFeature).toHaveBeenCalledWith('o1', 'meets');
-    expect(out).toMatchObject({ id: 'm1', name: 'Spring', eventCount: 0, hostPoolName: null, laneCount: 6 });
+    expect(out).toMatchObject({ id: 'm1', name: 'Spring', eventCount: 0, hostPoolName: null, laneCount: 6, published: false });
+  });
+
+  it('setPublished：所有权 + 切换', async () => {
+    const prisma: any = { meet: { findUnique: jest.fn().mockResolvedValue({ id: 'm1', ownerId: 'o1' }), update: jest.fn().mockResolvedValue({}) } };
+    const res = await new MeetsService(prisma, mkBilling()).setPublished('o1', 'm1', true);
+    expect(res).toEqual({ published: true });
+    expect(prisma.meet.update).toHaveBeenCalledWith({ where: { id: 'm1' }, data: { published: true } });
+  });
+
+  it('publicMeet：未发布 → 404；已发布 → 投影（无 email）', async () => {
+    const unp: any = { meet: { findUnique: jest.fn().mockResolvedValue({ id: 'm1', published: false }) } };
+    await expect(new MeetsService(unp, mkBilling()).publicMeet('m1')).rejects.toBeInstanceOf(NotFoundException);
+
+    const pub: any = {
+      meet: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'm1', name: 'X', meetDate: new Date('2026-06-30T00:00:00.000Z'), hostPool: { name: 'P' }, laneCount: 6, published: true,
+          createdAt: new Date('2026-06-30T00:00:00.000Z'),
+          events: [{ id: 'e1', distanceMeters: 50, stroke: 'FREE', order: 0, _count: { entries: 2 } }],
+        }),
+      },
+    };
+    const out = await new MeetsService(pub, mkBilling()).publicMeet('m1');
+    expect(out).toMatchObject({ id: 'm1', name: 'X', laneCount: 6 });
+    expect(out.events[0]).toMatchObject({ distanceMeters: 50, entryCount: 2 });
+    expect(JSON.stringify(out)).not.toContain('@');
+  });
+
+  it('publicStartList：只露 name/lane/seed，无 email', async () => {
+    const prisma: any = {
+      raceEvent: { findUnique: jest.fn().mockResolvedValue({ id: 'e1', meet: { published: true } }) },
+      meetEntry: {
+        findMany: jest.fn().mockResolvedValue([
+          { heat: 1, lane: 3, seedTimeMs: 28760, swimmer: { name: 'Sam' } },
+          { heat: 1, lane: 4, seedTimeMs: 29340, swimmer: { name: 'Bob' } },
+        ]),
+      },
+    };
+    const out = await new MeetsService(prisma, mkBilling()).publicStartList('e1');
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ heat: 1 });
+    expect(out[0].entries).toEqual([
+      { lane: 3, name: 'Sam', seedTimeMs: 28760 },
+      { lane: 4, name: 'Bob', seedTimeMs: 29340 },
+    ]);
+    expect(JSON.stringify(out)).not.toContain('@');
   });
 
   it('seedEvent：按种子成绩排道并落库（heat/lane）', async () => {

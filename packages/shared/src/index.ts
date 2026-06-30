@@ -127,7 +127,7 @@ export type Medal = 'gold' | 'silver' | 'bronze';
 export interface MeetSummary {
   id: string; name: string; meetDate: string;
   hostPoolId: string | null; hostPoolName: string | null;
-  laneCount: number; eventCount: number; createdAt: string;
+  laneCount: number; eventCount: number; published: boolean; createdAt: string;
 }
 export interface RaceEventItem { id: string; distanceMeters: number; stroke: Stroke; order: number; entryCount: number; }
 export interface MeetDetail extends MeetSummary { events: RaceEventItem[]; }
@@ -148,6 +148,16 @@ export interface CreateMeetDto { name: string; meetDate: string; hostPoolId?: st
 export interface CreateRaceEventDto { distanceMeters: number; stroke: Stroke; }
 export interface CreateEntryDto { swimmerId: string; seedTimeMs?: number | null; }
 export interface SetResultDto { resultStatus: ResultStatus; resultTimeMs?: number | null; }
+export interface SetPublishedDto { published: boolean; }
+
+// public event pages (E3) — PII-safe projections served unauthenticated for published meets
+export interface PublicRaceEvent { id: string; distanceMeters: number; stroke: Stroke; order: number; entryCount: number; }
+export interface PublicMeet {
+  id: string; name: string; meetDate: string;
+  hostPoolName: string | null; laneCount: number; events: PublicRaceEvent[];
+}
+export interface PublicStartListEntry { lane: number; name: string | null; seedTimeMs: number | null; }
+export interface PublicStartListHeat { heat: number; entries: PublicStartListEntry[]; }
 
 // platform — uniform error envelope returned by the global exception filter for ALL errors
 export interface ApiErrorResponse {

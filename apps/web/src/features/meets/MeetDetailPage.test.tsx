@@ -12,7 +12,7 @@ it('选项目后展示按性别/年龄组的排行榜（金银名次）', async 
     http.get('/api/meets/m1', () =>
       HttpResponse.json({
         id: 'm1', name: '夏季赛', meetDate: '2026-06-30T00:00:00.000Z',
-        hostPoolId: null, hostPoolName: null, eventCount: 1, createdAt: '2026-06-30T00:00:00.000Z',
+        hostPoolId: null, hostPoolName: null, laneCount: 6, eventCount: 1, published: false, createdAt: '2026-06-30T00:00:00.000Z',
         events: [{ id: 'e1', distanceMeters: 50, stroke: 'FREE', order: 0, entryCount: 2 }],
       })),
     http.get('/api/events/e1/entries', () => HttpResponse.json([])),
@@ -44,7 +44,7 @@ it('出发名单按分组渲染，且「排道」触发 seed', async () => {
     http.get('/api/meets/m1', () =>
       HttpResponse.json({
         id: 'm1', name: '排道赛', meetDate: '2026-06-30T00:00:00.000Z',
-        hostPoolId: null, hostPoolName: null, laneCount: 6, eventCount: 1, createdAt: '2026-06-30T00:00:00.000Z',
+        hostPoolId: null, hostPoolName: null, laneCount: 6, eventCount: 1, published: false, createdAt: '2026-06-30T00:00:00.000Z',
         events: [{ id: 'e1', distanceMeters: 50, stroke: 'FREE', order: 0, entryCount: 1 }],
       })),
     http.get('/api/events/e1/entries', () =>

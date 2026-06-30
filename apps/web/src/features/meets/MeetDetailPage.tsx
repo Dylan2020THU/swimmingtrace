@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { App, Button, Card, Empty, Form, Input, List, Modal, Select, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Card, Empty, Form, Input, List, Modal, Select, Space, Switch, Table, Tag, Typography } from 'antd';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import type { EntryItem, ResultStatus, StandingsGroup, Stroke } from '@swim/shared';
 import {
-  useMeet, useAddRaceEvent, usePools, useEntries, useAddEntry, useSetResult, useStandings, useSeedEvent,
+  useMeet, useAddRaceEvent, usePools, useEntries, useAddEntry, useSetResult, useStandings, useSeedEvent, usePublishMeet,
 } from '../../lib/queries';
 import * as ep from '../../lib/api/endpoints';
 import { STROKE_LABELS, RESULT_STATUS_LABELS, formatSwimTime, parseSwimTime } from '../../lib/swim-time';
@@ -111,6 +111,13 @@ export function MeetDetailPage() {
     catch (e: any) { message.error(e?.response?.data?.message ?? '排道失败'); }
   };
 
+  const publish = usePublishMeet(meetId);
+  const onPublish = async (checked: boolean) => {
+    try { await publish.mutateAsync(checked); message.success(checked ? '已公开' : '已取消公开'); }
+    catch (e: any) { message.error(e?.response?.data?.message ?? '操作失败'); }
+  };
+  const publicUrl = `${window.location.origin}/p/meets/${meetId}`;
+
   const submitEvent = async (v: { distanceMeters: number; stroke: Stroke }) => {
     try { await addEvent.mutateAsync({ distanceMeters: Number(v.distanceMeters), stroke: v.stroke }); eventForm.resetFields(); setEventOpen(false); }
     catch (e: any) { message.error(e?.response?.data?.message ?? '添加失败'); }
@@ -125,7 +132,23 @@ export function MeetDetailPage() {
   const m = meet.data;
   return (
     <Space direction="vertical" style={{ width: '100%' }} size="large">
-      <Card loading={meet.isLoading} title={m?.name ?? '赛事'}>
+      <Card
+        loading={meet.isLoading}
+        title={m?.name ?? '赛事'}
+        extra={
+          m && (
+            <Space>
+              <span style={{ color: 'var(--text-secondary)' }}>公开</span>
+              <Switch checked={m.published} loading={publish.isPending} onChange={onPublish} />
+              {m.published && (
+                <Button size="small" onClick={() => { navigator.clipboard?.writeText(publicUrl); message.success('已复制公开链接'); }}>
+                  复制链接
+                </Button>
+              )}
+            </Space>
+          )
+        }
+      >
         {m && (
           <Typography.Text type="secondary">
             {new Date(m.meetDate).toLocaleDateString()}

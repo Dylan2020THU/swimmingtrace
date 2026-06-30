@@ -6,7 +6,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { IsDateString, IsIn, IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import { IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 import {
   CreateEntryDto,
   CreateMeetDto,
@@ -20,6 +20,9 @@ import {
   SetResultDto,
   StandingsGroup,
   Stroke,
+  PublicMeet,
+  PublicStartListHeat,
+  SetPublishedDto,
 } from '@swim/shared';
 import { PrismaService } from '../prisma.service';
 import { BillingService } from '../billing/billing.service';
@@ -43,6 +46,9 @@ export class CreateEntryBody implements CreateEntryDto {
 export class SetResultBody implements SetResultDto {
   @IsIn(['ENTERED', 'OK', 'DNS', 'DNF', 'DQ']) resultStatus: ResultStatus;
   @IsOptional() @IsInt() @Min(0) resultTimeMs?: number | null;
+}
+export class SetPublishedBody implements SetPublishedDto {
+  @IsBoolean() published: boolean;
 }
 
 type SwimmerLite = { id: string; name: string | null; email: string; gender: Gender | null; birthDate: Date | null };
@@ -113,6 +119,7 @@ export class MeetsService {
       hostPoolName: meet.hostPool?.name ?? null,
       laneCount: meet.laneCount,
       eventCount: 0,
+      published: meet.published,
       createdAt: meet.createdAt.toISOString(),
     };
   }
@@ -131,6 +138,7 @@ export class MeetsService {
       hostPoolName: m.hostPool?.name ?? null,
       laneCount: m.laneCount,
       eventCount: m._count.events,
+      published: m.published,
       createdAt: m.createdAt.toISOString(),
     }));
   }
@@ -152,6 +160,7 @@ export class MeetsService {
       hostPoolName: m.hostPool?.name ?? null,
       laneCount: m.laneCount,
       eventCount: m.events.length,
+      published: m.published,
       createdAt: m.createdAt.toISOString(),
       events: m.events.map((e) => ({ id: e.id, distanceMeters: e.distanceMeters, stroke: e.stroke, order: e.order, entryCount: e._count.entries })),
     };
@@ -263,5 +272,68 @@ export class MeetsService {
       ),
     );
     return this.listEntries(ownerId, eventId);
+  }
+
+  // ---- publish + public projections (E3) ----
+  async setPublished(ownerId: string, meetId: string, published: boolean): Promise<{ published: boolean }> {
+    await this.ownMeet(ownerId, meetId);
+    await this.prisma.meet.update({ where: { id: meetId }, data: { published } });
+    return { published };
+  }
+
+  /** Public meet projection — only for a published meet; PII-free. */
+  async publicMeet(meetId: string): Promise<PublicMeet> {
+    const m = await this.prisma.meet.findUnique({
+      where: { id: meetId },
+      include: {
+        hostPool: { select: { name: true } },
+        events: { orderBy: { order: 'asc' }, include: { _count: { select: { entries: true } } } },
+      },
+    });
+    if (!m || !m.published) throw new NotFoundException();
+    return {
+      id: m.id,
+      name: m.name,
+      meetDate: m.meetDate.toISOString(),
+      hostPoolName: m.hostPool?.name ?? null,
+      laneCount: m.laneCount,
+      events: m.events.map((e) => ({ id: e.id, distanceMeters: e.distanceMeters, stroke: e.stroke, order: e.order, entryCount: e._count.entries })),
+    };
+  }
+
+  private async ensurePublishedEvent(eventId: string) {
+    const ev = await this.prisma.raceEvent.findUnique({ where: { id: eventId }, include: { meet: true } });
+    if (!ev || !ev.meet.published) throw new NotFoundException();
+    return ev;
+  }
+
+  /** Public start list — name + lane + seed time only, no email/PII. */
+  async publicStartList(eventId: string): Promise<PublicStartListHeat[]> {
+    await this.ensurePublishedEvent(eventId);
+    const entries = await this.prisma.meetEntry.findMany({
+      where: { raceEventId: eventId, heat: { not: null } },
+      include: { swimmer: { select: { name: true } } },
+      orderBy: [{ heat: 'asc' }, { lane: 'asc' }],
+    });
+    const heats = new Map<number, PublicStartListHeat>();
+    for (const e of entries) {
+      const h = e.heat as number;
+      if (!heats.has(h)) heats.set(h, { heat: h, entries: [] });
+      heats.get(h)!.entries.push({ lane: e.lane as number, name: e.swimmer.name, seedTimeMs: e.seedTimeMs });
+    }
+    return [...heats.values()];
+  }
+
+  /** Public results (standings) — name/age-group/time/rank only, no PII. */
+  async publicResults(eventId: string): Promise<StandingsGroup[]> {
+    const ev = await this.ensurePublishedEvent(eventId);
+    const entries = await this.prisma.meetEntry.findMany({
+      where: { raceEventId: eventId },
+      include: { swimmer: { select: { id: true, name: true, gender: true, birthDate: true } } },
+    });
+    return computeStandings(
+      entries.map((e) => ({ swimmerId: e.swimmer.id, name: e.swimmer.name, gender: e.swimmer.gender ?? null, birthDate: e.swimmer.birthDate ?? null, resultTimeMs: e.resultTimeMs, resultStatus: e.resultStatus })),
+      ev.meet.meetDate,
+    );
   }
 }

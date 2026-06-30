@@ -187,6 +187,7 @@ model Meet {
   hostPoolId String?
   hostPool   Pool?       @relation(fields: [hostPoolId], references: [id], onDelete: SetNull)
   laneCount  Int         @default(6)
+  published  Boolean     @default(false)
   events     RaceEvent[]
   createdAt  DateTime    @default(now())
 
