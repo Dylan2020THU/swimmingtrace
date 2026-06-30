@@ -3,7 +3,7 @@ import { idempotencyKey } from '../idempotency';
 import type {
   LoginResponse, MeResponse, CreatePoolDto, UpdatePoolDto, PoolSummary, PoolDetail,
   CreateSwimmerDto, SwimmerListItem, UpdateMembershipDto, CreateSessionDto, Paginated,
-  OverviewStats, PoolStats, SwimmerStats, ClaimLinkResponse,
+  OverviewStats, PoolStats, SwimmerStats, ClaimLinkResponse, MemberProfile, MemberSessionRow,
   ChallengeSummary, ChallengeDetail, CreateChallengeDto, ActiveChallengeItem, AccountExport, Plan, PlanInfo,
   ApiKeyListItem, CreatedApiKey,
   MeetSummary, MeetDetail, RaceEventItem, EntryItem, StandingsGroup,
@@ -110,4 +110,9 @@ export const getPublicSeasonRecords = (id: string) => api.get<RecordRow[]>(`/pub
 
 export const getOverview = () => api.get<OverviewStats>('/stats/overview').then((r) => r.data);
 export const getPoolStats = (id: string) => api.get<PoolStats>(`/stats/pool/${id}`).then((r) => r.data);
-export const getSwimmerStats = (sid: string) => api.get<SwimmerStats>(`/stats/swimmer/${sid}`).then((r) => r.data);
+export const getSwimmerStats = (sid: string, year?: number) =>
+  api.get<SwimmerStats>(`/stats/swimmer/${sid}`, { params: year ? { year } : {} }).then((r) => r.data);
+export const getMemberProfile = (sid: string) =>
+  api.get<MemberProfile>(`/stats/swimmer/${sid}/profile`).then((r) => r.data);
+export const getMemberSessions = (sid: string, year: number, page = 1, pageSize = 20) =>
+  api.get<Paginated<MemberSessionRow>>(`/stats/swimmer/${sid}/sessions`, { params: { year, page, pageSize } }).then((r) => r.data);

@@ -73,6 +73,18 @@ export interface MyChallengeItem {
   startDate: string; endDate: string;
 }
 
+// member profile (owner-facing GitHub-style member page at /swimmers/:sid)
+export interface MemberProfile {
+  swimmerId: string; name: string | null; email: string;
+  gender: Gender | null; birthDate: string | null;
+  claimedAt: string | null; createdAt: string;
+  pools: Array<{ poolId: string; poolName: string; status: RegistrationStatus; joinedAt: string }>;
+}
+export interface MemberSessionRow {
+  id: string; swamAt: string; distanceMeters: number;
+  durationSeconds: number | null; poolId: string | null; poolName: string | null;
+}
+
 // stats
 export interface HeatmapCell { date: string; distanceMeters: number; }
 export interface OverviewStats {
