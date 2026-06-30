@@ -9,13 +9,13 @@ describe('MeetsService', () => {
   it('createMeet：Pro 门禁 + 落库', async () => {
     const prisma: any = {
       meet: {
-        create: jest.fn().mockResolvedValue({ id: 'm1', name: 'Spring', meetDate: new Date('2026-07-01T00:00:00.000Z'), hostPoolId: null, hostPool: null, laneCount: 6, published: false, registrationOpen: false, createdAt: new Date('2026-06-30T00:00:00.000Z') }),
+        create: jest.fn().mockResolvedValue({ id: 'm1', name: 'Spring', meetDate: new Date('2026-07-01T00:00:00.000Z'), hostPoolId: null, hostPool: null, laneCount: 6, published: false, registrationOpen: false, seasonId: null, createdAt: new Date('2026-06-30T00:00:00.000Z') }),
       },
     };
     const billing = mkBilling();
     const out = await new MeetsService(prisma, billing).createMeet('o1', { name: 'Spring', meetDate: '2026-07-01T00:00:00.000Z' });
     expect(billing.assertFeature).toHaveBeenCalledWith('o1', 'meets');
-    expect(out).toMatchObject({ id: 'm1', name: 'Spring', eventCount: 0, hostPoolName: null, laneCount: 6, published: false, registrationOpen: false });
+    expect(out).toMatchObject({ id: 'm1', name: 'Spring', eventCount: 0, hostPoolName: null, laneCount: 6, published: false, registrationOpen: false, seasonId: null, seasonName: null });
   });
 
   it('setPublished：所有权 + 切换', async () => {
@@ -242,5 +242,28 @@ describe('MeetsService', () => {
     const res = await new MeetsService(prisma, mkBilling()).withdrawOwn('s1', 'en1');
     expect(res).toEqual({ ok: true });
     expect(prisma.meetEntry.delete).toHaveBeenCalledWith({ where: { id: 'en1' } });
+  });
+
+  // ---- season assignment (E5) ----
+  it('setMeetSeason：跨 owner 赛季 → 404，不更新', async () => {
+    const prisma: any = {
+      meet: { findUnique: jest.fn().mockResolvedValue({ id: 'm1', ownerId: 'o1' }), update: jest.fn() },
+      season: { findUnique: jest.fn().mockResolvedValue({ id: 's1', ownerId: 'other' }) },
+    };
+    await expect(new MeetsService(prisma, mkBilling()).setMeetSeason('o1', 'm1', 's1')).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.meet.update).not.toHaveBeenCalled();
+  });
+
+  it('setMeetSeason：归入本人赛季返回 seasonName', async () => {
+    const prisma: any = {
+      meet: { findUnique: jest.fn().mockResolvedValue({ id: 'm1', ownerId: 'o1' }), update: jest.fn().mockResolvedValue({}) },
+      season: { findUnique: jest.fn().mockResolvedValue({ id: 's1', ownerId: 'o1', name: 'S' }) },
+    };
+    expect(await new MeetsService(prisma, mkBilling()).setMeetSeason('o1', 'm1', 's1')).toEqual({ seasonId: 's1', seasonName: 'S' });
+  });
+
+  it('setMeetSeason：移出赛季(null)', async () => {
+    const prisma: any = { meet: { findUnique: jest.fn().mockResolvedValue({ id: 'm1', ownerId: 'o1' }), update: jest.fn().mockResolvedValue({}) } };
+    expect(await new MeetsService(prisma, mkBilling()).setMeetSeason('o1', 'm1', null)).toEqual({ seasonId: null, seasonName: null });
   });
 });

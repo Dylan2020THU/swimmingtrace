@@ -30,6 +30,12 @@ export class MeController {
     return this.me.myChallenges(user.id);
   }
 
+  @Get('records')
+  @Roles(Role.SWIMMER)
+  records(@CurrentUser() user: { id: string }) {
+    return this.me.myRecords(user.id);
+  }
+
   @Patch('profile')
   @Roles(Role.SWIMMER)
   updateProfile(@CurrentUser() user: { id: string }, @Body() dto: UpdateProfileBody) {

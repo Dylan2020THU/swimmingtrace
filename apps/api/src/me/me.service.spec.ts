@@ -42,6 +42,36 @@ describe('MeService.updateProfile', () => {
   });
 });
 
+describe('MeService.myRecords', () => {
+  const sw = { id: 's1', name: 'Me', gender: 'MALE', birthDate: new Date('2012-03-01T00:00:00.000Z') };
+  const ev = (timeMs: number, meetName: string) => ({
+    swimmer: sw, resultTimeMs: timeMs, resultStatus: 'OK',
+    raceEvent: { distanceMeters: 50, stroke: 'FREE', meet: { ownerId: 'o1', name: meetName, meetDate: new Date('2026-02-01T00:00:00.000Z') } },
+  });
+
+  it('每项目取最快 PB，并标注是否赛会纪录', async () => {
+    const prisma: any = {
+      meetEntry: {
+        findMany: jest
+          .fn()
+          .mockResolvedValueOnce([ev(30000, 'M1'), ev(29500, 'M2')]) // mine
+          .mockResolvedValueOnce([
+            ev(29500, 'M2'),
+            { swimmer: { id: 'x', name: 'X', gender: 'MALE', birthDate: new Date('2012-03-01T00:00:00.000Z') }, resultTimeMs: 31000, resultStatus: 'OK', raceEvent: { distanceMeters: 50, stroke: 'FREE', meet: { ownerId: 'o1', name: 'M', meetDate: new Date('2026-02-01T00:00:00.000Z') } } },
+          ]), // all owner entries
+      },
+    };
+    const res = await new MeService(prisma, {} as any).myRecords('s1');
+    expect(res).toHaveLength(1);
+    expect(res[0]).toMatchObject({ distanceMeters: 50, stroke: 'FREE', timeMs: 29500, isClubRecord: true });
+  });
+
+  it('无报名 → 空数组', async () => {
+    const prisma: any = { meetEntry: { findMany: jest.fn().mockResolvedValue([]) } };
+    expect(await new MeService(prisma, {} as any).myRecords('s1')).toEqual([]);
+  });
+});
+
 describe('MeService.myChallenges', () => {
   it('返回进行中挑战 + 我的名次/里程/池进度', async () => {
     const prisma: any = {

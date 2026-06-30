@@ -6,8 +6,9 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import { IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, IsUUID, Max, Min, ValidateIf } from 'class-validator';
 import {
+  AssignSeasonDto,
   CreateEntryDto,
   CreateMeetDto,
   CreateRaceEventDto,
@@ -58,6 +59,9 @@ export class SetRegistrationBody implements SetRegistrationDto {
 }
 export class SelfEntryBody implements SelfEntryDto {
   @IsOptional() @IsInt() @Min(0) seedTimeMs?: number | null;
+}
+export class AssignSeasonBody implements AssignSeasonDto {
+  @ValidateIf((o) => o.seasonId !== null) @IsUUID() seasonId: string | null;
 }
 
 type SwimmerLite = { id: string; name: string | null; email: string; gender: Gender | null; birthDate: Date | null };
@@ -130,6 +134,8 @@ export class MeetsService {
       eventCount: 0,
       published: meet.published,
       registrationOpen: meet.registrationOpen,
+      seasonId: meet.seasonId,
+      seasonName: null,
       createdAt: meet.createdAt.toISOString(),
     };
   }
@@ -138,7 +144,7 @@ export class MeetsService {
     const meets = await this.prisma.meet.findMany({
       where: { ownerId },
       orderBy: { meetDate: 'desc' },
-      include: { hostPool: { select: { name: true } }, _count: { select: { events: true } } },
+      include: { hostPool: { select: { name: true } }, season: { select: { name: true } }, _count: { select: { events: true } } },
     });
     return meets.map((m) => ({
       id: m.id,
@@ -150,6 +156,8 @@ export class MeetsService {
       eventCount: m._count.events,
       published: m.published,
       registrationOpen: m.registrationOpen,
+      seasonId: m.seasonId,
+      seasonName: m.season?.name ?? null,
       createdAt: m.createdAt.toISOString(),
     }));
   }
@@ -160,6 +168,7 @@ export class MeetsService {
       where: { id: meetId },
       include: {
         hostPool: { select: { name: true } },
+        season: { select: { name: true } },
         events: { orderBy: { order: 'asc' }, include: { _count: { select: { entries: true } } } },
       },
     });
@@ -173,6 +182,8 @@ export class MeetsService {
       eventCount: m.events.length,
       published: m.published,
       registrationOpen: m.registrationOpen,
+      seasonId: m.seasonId,
+      seasonName: m.season?.name ?? null,
       createdAt: m.createdAt.toISOString(),
       events: m.events.map((e) => ({ id: e.id, distanceMeters: e.distanceMeters, stroke: e.stroke, order: e.order, entryCount: e._count.entries })),
     };
@@ -298,6 +309,19 @@ export class MeetsService {
     await this.ownMeet(ownerId, meetId);
     await this.prisma.meet.update({ where: { id: meetId }, data: { registrationOpen } });
     return { registrationOpen };
+  }
+
+  /** Assign a meet to (or clear it from) a season the owner owns. */
+  async setMeetSeason(ownerId: string, meetId: string, seasonId: string | null): Promise<{ seasonId: string | null; seasonName: string | null }> {
+    await this.ownMeet(ownerId, meetId);
+    let seasonName: string | null = null;
+    if (seasonId !== null) {
+      const season = await this.prisma.season.findUnique({ where: { id: seasonId } });
+      if (!season || season.ownerId !== ownerId) throw new NotFoundException('赛季不存在');
+      seasonName = season.name;
+    }
+    await this.prisma.meet.update({ where: { id: meetId }, data: { seasonId } });
+    return { seasonId, seasonName };
   }
 
   /** The set of owner ids whose pools this swimmer is an ACTIVE member of. */
