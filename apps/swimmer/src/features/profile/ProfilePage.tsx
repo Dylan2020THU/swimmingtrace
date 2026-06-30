@@ -17,6 +17,9 @@ export function ProfilePage() {
     <div>
       <List header="我的">
         <List.Item extra={user?.email}>邮箱</List.Item>
+        <List.Item clickable onClick={() => navigate('/records')}>
+          我的成绩
+        </List.Item>
         <List.Item clickable onClick={() => navigate('/nearby')}>
           附近泳池
         </List.Item>
