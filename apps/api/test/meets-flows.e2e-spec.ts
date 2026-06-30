@@ -65,7 +65,7 @@ describe('Meets E1 (e2e)', () => {
 
     const st = await auth(request(srv()).get(`/events/${eid}/standings`)).expect(200);
     expect(st.body).toHaveLength(1);
-    expect(st.body[0]).toMatchObject({ gender: 'MALE', ageGroup: '13-14' });
+    expect(st.body[0]).toMatchObject({ gender: 'MALE', ageGroup: '9至14岁' });
     expect(st.body[0].rows.map((r: any) => [r.name, r.rank, r.medal])).toEqual([
       ['Sam', 1, 'gold'],
       ['Bob', 2, 'silver'],

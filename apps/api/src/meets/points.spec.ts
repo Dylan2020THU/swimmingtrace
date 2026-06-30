@@ -2,7 +2,7 @@ import { StandingEntry } from './standings';
 import { pointsForRank, seasonPoints, SeasonEvent } from './points';
 
 const ref = new Date('2026-01-01T00:00:00.000Z');
-// Both swimmers land in MALE 13-14 at the reference date.
+// Both swimmers land in MALE 9至14岁 at the reference date.
 const mk = (swimmerId: string, name: string, timeMs: number | null, status: StandingEntry['resultStatus'] = 'OK'): StandingEntry => ({
   swimmerId, name, gender: 'MALE', birthDate: new Date('2012-03-01T00:00:00.000Z'),
   resultTimeMs: timeMs, resultStatus: status,
@@ -25,7 +25,7 @@ describe('seasonPoints', () => {
     ];
     const groups = seasonPoints(events, ref);
     expect(groups).toHaveLength(1);
-    expect(groups[0]).toMatchObject({ gender: 'MALE', ageGroup: '13-14' });
+    expect(groups[0]).toMatchObject({ gender: 'MALE', ageGroup: '9至14岁' });
     expect(groups[0].rows).toEqual([
       { rank: 1, swimmerId: 'a', name: 'A', points: 18 },
       { rank: 2, swimmerId: 'b', name: 'B', points: 14 },

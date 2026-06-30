@@ -141,13 +141,16 @@ export type Medal = 'gold' | 'silver' | 'bronze';
 
 // age groups — shared by the meets domain (standings/records) and owner member tables.
 export interface AgeBand { label: string; minAge?: number; maxAge?: number; }
-/** Standard swim age bands, computed by actual age on a reference date. Tunable. */
+/** Swim age bands, computed by actual age on a reference date. Tunable. */
 export const AGE_GROUPS: AgeBand[] = [
-  { label: '10及以下', maxAge: 10 },
-  { label: '11-12', minAge: 11, maxAge: 12 },
-  { label: '13-14', minAge: 13, maxAge: 14 },
-  { label: '15-17', minAge: 15, maxAge: 17 },
-  { label: '18及以上', minAge: 18 },
+  { label: '6至8岁', minAge: 6, maxAge: 8 },
+  { label: '9至14岁', minAge: 9, maxAge: 14 },
+  { label: '15至18岁', minAge: 15, maxAge: 18 },
+  { label: '19至35岁', minAge: 19, maxAge: 35 },
+  { label: '36至45岁', minAge: 36, maxAge: 45 },
+  { label: '46至55岁', minAge: 46, maxAge: 55 },
+  { label: '56至69岁', minAge: 56, maxAge: 69 },
+  { label: '70岁以上', minAge: 70 },
 ];
 /** Whole-years age of `birthDate` as of `on` (UTC). */
 export function ageAt(birthDate: Date, on: Date): number {
@@ -163,7 +166,8 @@ export function ageGroupOf(birthDate: Date, on: Date): string {
       return b.label;
     }
   }
-  return AGE_GROUPS[AGE_GROUPS.length - 1].label;
+  // Below the youngest band (e.g. under 6) clamps to the youngest; the oldest band is open-ended.
+  return AGE_GROUPS[0].label;
 }
 
 export interface MeetSummary {

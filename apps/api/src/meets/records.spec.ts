@@ -21,17 +21,17 @@ describe('clubRecords', () => {
       mk({ swimmerId: 'e', resultTimeMs: 29000, gender: null }), // 无法分组 → 排除
     ]);
     expect(recs).toHaveLength(2);
-    expect(recs[0]).toMatchObject({ gender: 'MALE', ageGroup: '13-14', distanceMeters: 50, stroke: 'FREE', swimmerId: 'a', timeMs: 30000 });
+    expect(recs[0]).toMatchObject({ gender: 'MALE', ageGroup: '9至14岁', distanceMeters: 50, stroke: 'FREE', swimmerId: 'a', timeMs: 30000 });
     expect(recs[1]).toMatchObject({ gender: 'FEMALE', swimmerId: 'c', timeMs: 32000 });
     expect(JSON.stringify(recs)).not.toContain('29000'); // 被排除项未泄漏
   });
 
   it('同泳者跨年龄段各立一条（年龄组按各成绩赛事日期计）', () => {
     const recs = clubRecords([
-      mk({ swimmerId: 'a', resultTimeMs: 30000, meetDate: new Date('2024-06-01T00:00:00.000Z') }), // age 12 → 11-12
-      mk({ swimmerId: 'a', resultTimeMs: 29000, meetDate: new Date('2026-06-01T00:00:00.000Z') }), // age 14 → 13-14
+      mk({ swimmerId: 'a', resultTimeMs: 30000, birthDate: new Date('2010-06-01T00:00:00.000Z'), meetDate: new Date('2024-06-01T00:00:00.000Z') }), // age 14 → 9至14岁
+      mk({ swimmerId: 'a', resultTimeMs: 29000, birthDate: new Date('2010-06-01T00:00:00.000Z'), meetDate: new Date('2026-06-01T00:00:00.000Z') }), // age 16 → 15至18岁
     ]);
-    expect(recs.map((r) => r.ageGroup).sort()).toEqual(['11-12', '13-14']);
+    expect(recs.map((r) => r.ageGroup).sort()).toEqual(['15至18岁', '9至14岁']);
   });
 });
 

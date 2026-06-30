@@ -18,7 +18,7 @@ describe('computeStandings', () => {
       meet,
     );
     expect(g).toHaveLength(1);
-    expect(g[0]).toMatchObject({ gender: 'MALE', ageGroup: '13-14' });
+    expect(g[0]).toMatchObject({ gender: 'MALE', ageGroup: '9至14岁' });
     expect(g[0].rows.map((r) => [r.name, r.rank, r.medal])).toEqual([
       ['B', 1, 'gold'],
       ['C', 2, 'silver'],
