@@ -28,6 +28,27 @@ enum Plan {
   PRO
 }
 
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum Stroke {
+  FREE
+  BACK
+  BREAST
+  FLY
+  IM
+}
+
+enum ResultStatus {
+  ENTERED
+  OK
+  DNS
+  DNF
+  DQ
+}
+
 model User {
   id            String         @id @default(uuid())
   email         String         @unique
@@ -36,12 +57,16 @@ model User {
   role          Role           @default(SWIMMER)
   plan          Plan           @default(FREE)
   planUpdatedAt DateTime?
+  gender        Gender?
+  birthDate     DateTime?
   ownedPools    Pool[]         @relation("PoolOwner")
   registrations Registration[]
   sessions      SwimSession[]
   refreshTokens RefreshToken[]
   idempotencyKeys IdempotencyKey[]
   apiKeys       ApiKey[]
+  meets         Meet[]         @relation("MeetOwner")
+  meetEntries   MeetEntry[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   claimedAt     DateTime?
@@ -66,6 +91,7 @@ model Pool {
   registrations Registration[]
   sessions      SwimSession[]
   challenges    Challenge[]
+  hostedMeets   Meet[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   archivedAt    DateTime?
@@ -149,6 +175,51 @@ model IdempotencyKey {
 
   @@unique([userId, key])
   @@index([createdAt])
+}
+
+// Competition meet: a dated event hosted by an owner, containing race events.
+model Meet {
+  id         String      @id @default(uuid())
+  ownerId    String
+  owner      User        @relation("MeetOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  name       String
+  meetDate   DateTime
+  hostPoolId String?
+  hostPool   Pool?       @relation(fields: [hostPoolId], references: [id], onDelete: SetNull)
+  events     RaceEvent[]
+  createdAt  DateTime    @default(now())
+
+  @@index([ownerId])
+}
+
+// One race within a meet (e.g. 50m FREE). All categories swim it; results split by gender × age group.
+model RaceEvent {
+  id             String      @id @default(uuid())
+  meetId         String
+  meet           Meet        @relation(fields: [meetId], references: [id], onDelete: Cascade)
+  distanceMeters Int
+  stroke         Stroke
+  order          Int         @default(0)
+  entries        MeetEntry[]
+  createdAt      DateTime    @default(now())
+
+  @@index([meetId])
+}
+
+// A swimmer entered into a race event; the result (time + status) is inlined here.
+model MeetEntry {
+  id           String       @id @default(uuid())
+  raceEventId  String
+  raceEvent    RaceEvent    @relation(fields: [raceEventId], references: [id], onDelete: Cascade)
+  swimmerId    String
+  swimmer      User         @relation(fields: [swimmerId], references: [id], onDelete: Cascade)
+  seedTimeMs   Int?
+  resultTimeMs Int?
+  resultStatus ResultStatus @default(ENTERED)
+  createdAt    DateTime     @default(now())
+
+  @@unique([raceEventId, swimmerId])
+  @@index([raceEventId])
 }
 
 // Long-lived programmatic credential for an owner. Stored hashed (sha256); the

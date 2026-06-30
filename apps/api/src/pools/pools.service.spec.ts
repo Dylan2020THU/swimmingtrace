@@ -150,24 +150,27 @@ describe('PoolsService.listSwimmers', () => {
 });
 
 describe('PoolsService.setMembershipStatus', () => {
-  it('校验所有权后更新 Registration 状态', async () => {
+  it('校验登记后更新状态，并可改会员人口学', async () => {
     const prisma: any = {
       pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
-      registration: { update: jest.fn().mockResolvedValue({ status: 'INACTIVE' }) },
+      registration: { findUnique: jest.fn().mockResolvedValue({ id: 'r1' }), update: jest.fn().mockResolvedValue({}) },
+      user: { update: jest.fn().mockResolvedValue({}) },
     };
     const svc = new PoolsService(prisma, { get: () => undefined } as any, mkMail(), mkBilling());
-    await svc.setMembershipStatus('o1', 'p1', 's1', { status: 'INACTIVE' });
+    await svc.setMembershipStatus('o1', 'p1', 's1', { status: 'INACTIVE', gender: 'MALE', birthDate: '2012-01-01' });
     expect(prisma.registration.update).toHaveBeenCalledWith({
       where: { swimmerId_poolId: { swimmerId: 's1', poolId: 'p1' } },
       data: { status: 'INACTIVE' },
     });
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 's1' }, data: expect.objectContaining({ gender: 'MALE' }) }),
+    );
   });
 
-  it('游泳者未登记在本池（P2025）→ NotFoundException', async () => {
-    const p2025 = new Prisma.PrismaClientKnownRequestError('not found', { code: 'P2025', clientVersion: 'test' });
+  it('游泳者未登记在本池 → NotFoundException', async () => {
     const prisma: any = {
       pool: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', ownerId: 'o1', archivedAt: null }) },
-      registration: { update: jest.fn().mockRejectedValue(p2025) },
+      registration: { findUnique: jest.fn().mockResolvedValue(null) },
     };
     const svc = new PoolsService(prisma, { get: () => undefined } as any, mkMail(), mkBilling());
     await expect(svc.setMembershipStatus('o1', 'p1', 'ghost', { status: 'INACTIVE' })).rejects.toBeInstanceOf(NotFoundException);
